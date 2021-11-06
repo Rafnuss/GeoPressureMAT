@@ -2,3 +2,7 @@ data/*
 resources/*
 old/*
 HTML/*
+
+*.asv
+*.mat
+*.m~
