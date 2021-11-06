@@ -29,7 +29,7 @@ for i_sm = 1:height(sta_sm)-1
 
         i_s_staID = i_sm_staID(i_s);
 
-        filename = "ECMWF/" + raw.GDL_ID + "/" + "sta_" + num2str(i_s_staID) + ".nc";
+        filename = "../data/ECMWF/" + raw.GDL_ID + "/" + "sta_" + num2str(i_s_staID) + ".nc";
 
         wpres=double(ncread(filename,'level'));
         wlat=double(ncread(filename,'latitude'));

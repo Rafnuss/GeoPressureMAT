@@ -58,7 +58,7 @@ mvt_pdf = @(x) speed_y(min(round(x)+1,1000));
 % probability is static prob of target x airspeed prob
 gr3.p = prob_map(gr3.t) .* mvt_pdf(abs(gr3.as));
 
-assert(sum(gr3.p==0)==0)
+
 
 %% Marignal probability map
 gr3.M = probMapGraph(gr3);
@@ -83,7 +83,7 @@ gr3.sp = shortestPathGraph(gr3);
 
 
 
-%%
+%% Seletect option for ploting
 grf = gr3;
 nrow=4;
 
