@@ -2,7 +2,7 @@ function [activity,km2] = classifyActivityTrainsetRaf(raw,km)
 %CLASSIFYACTIVITY uses activity data to classify migratory flapping flight.
 %   Adapted from classifyFLAP
 
-filename = ['Label/activity_label/' raw.GDL_ID '_act_pres'];
+filename = ['../data/labels/activity_label/' raw.GDL_ID '_act_pres'];
 
 if ~exist([filename '-labeled.csv'])>0
     % Create table of activity labeled (1: small activity, 2: high activity, 3: migration)

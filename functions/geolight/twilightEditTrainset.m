@@ -6,7 +6,7 @@ else
     plotit = true;
 end
 
-filename = ['Label/twilight_label/' raw.GDL_ID '_twl'];
+filename = ['../data/labels/twilight_label/' raw.GDL_ID '_twl'];
 
 twl_day = dateshift(twl.Twilight,'start','day');
 twl_hour = minutes(twl.Twilight-twl_day);
