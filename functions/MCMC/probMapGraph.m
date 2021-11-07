@@ -19,7 +19,7 @@ for i_s=1:gr.snds(3)-1
     mapF(1,gr.s(1))=1;
     mapF = mapF*transF;
     
-    mapB(1,gr.t(end))=1;
+    mapB(1,gr.lastNodes)=1;
     mapB = mapB*transB;
 end
 

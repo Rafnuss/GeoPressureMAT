@@ -13,6 +13,7 @@ gr.actEffort = max(1,hours(actEffort));
 % Create the index matrix of all coordinate (space-time) of the grid
 % idx=reshape(1:numel(prob_map),size(prob_map));
 
+
 % Normalize the probability map for each night
 prob_map = prob_map ./ sum(prob_map,[1 2]);
 
@@ -20,18 +21,21 @@ prob_map = prob_map ./ sum(prob_map,[1 2]);
 % thr_prob_percentile of the probability for each stationary period
 tmp = sort(reshape(prob_map,[],gr.snds(3)));
 thr_prob = tmp(sub2ind(size(tmp),sum(cumsum(tmp)<=(1-thr_prob_percentile)),1:gr.snds(3)));
-nds = prob_map>=reshape(thr_prob,1,1,[]);
 
 % Set first and last one to true only at the known location.
 [~, tmp1] = min(abs(gr.lat(:)-calib.lat));
 [~, tmp2] = min(abs(gr.lon(:)-calib.lon));
-if any(isnat(calib.second_period))
-    nds(:,:,1)=false;
-    nds(tmp1,tmp2,1)=true;
-else
-    nds(:,:,[1 end])=false;
-    nds(tmp1,tmp2,[1 end])=true;
+prob_map(:,:,1)=0;
+prob_map(tmp1,tmp2,1)=1;
+if ~any(isnat(calib.second_period))
+    prob_map(:,:,end)=0;
+    prob_map(tmp1,tmp2,end)=1;
 end
+
+
+nds = prob_map>=reshape(thr_prob,1,1,[]);
+
+
 
 assert(all(sum(nds,[1 2])>0),['No possible location at stationary period: ' num2str(find(sum(nds,[1 2])==0)')])
 
@@ -43,10 +47,14 @@ for i_s = 1:gr.snds(3)-1
     [S{i_s}, T{i_s}]= meshgrid(find(nds(:,:,i_s))+(i_s-1)*prod(gr.snds(1:2)), find(nds(:,:,i_s+1))+i_s*prod(gr.snds(1:2)));
 end
 
+gr.lastNodes=unique(T{end});
+
 % Convert the cells to matrix
 gr.s = cell2mat(cellfun(@(x) x(:),S,'UniformOutput',false));
 gr.t = cell2mat(cellfun(@(x) x(:),T,'UniformOutput',false));
 
+
+%% Compute GS
 [Slat,Slon,St]=ind2sub(gr.snds,gr.s);
 [Tlat,Tlon,~]=ind2sub(gr.snds,gr.t);
 
@@ -58,5 +66,9 @@ gr.t = cell2mat(cellfun(@(x) x(:),T,'UniformOutput',false));
 % gr.gs = sum([sign(lon(Tlon)-lon(Slon)) sign(lat(Tlat)-lat(Slat))].*tmp .* [1 1i],2);
 resolution=0.25*111;
 gr.gs = resolution.*((Tlon-Slon).*cos(pi/180*lat(floor((Tlat+Slat)/2)))+1i.*(Tlat-Slat))./gr.actEffort(St);
+
+
+%% Probability static 
+gr.ps = prob_map(gr.t);
 
 end

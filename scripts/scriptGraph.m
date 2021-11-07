@@ -26,11 +26,11 @@ end
 
 %% 
 
-lt=16;
+lt=2;
 % lt=find(tblLog.GDL_ID == "22QO"); % 22QL
 
-thr_prob_percentile = .99;
 prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
+thr_prob_percentile = .99;
 
 tic
 [gr1,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile);
@@ -56,7 +56,7 @@ mvt_pdf = @(x) speed_y(min(round(x)+1,1000));
 % figure; plot(speed_x*1000/60/60, speed_y./sum(speed_y)); xlim([0 50]); hold on; 
 
 % probability is static prob of target x airspeed prob
-gr3.p = prob_map(gr3.t) .* mvt_pdf(abs(gr3.as));
+gr3.p = gr3.ps .* mvt_pdf(abs(gr3.as));
 
 
 
@@ -95,9 +95,9 @@ nrow=4;
 [Tlat,Tlon,Tt]=ind2sub(grf.snds,grf.t);
 
 figure('position',[0 0 2400 1000]);
-ha=tight_subplot(nrow,ceil(grf.snds(3)/nrow),[0.01 0],0,0);
+tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
 for i_s = 1:height(sta{lt})-1
-    axes(ha(i_s)); hold on
+    nexttile(i_s); hold on
     histogram(abs(grf.gs(St==i_s)),0:5:100);
     histogram(abs(grf.as(St==i_s)),0:5:50);
     histogram(abs(grf.ws(St==i_s)),0:5:50);
@@ -109,7 +109,8 @@ end
 %% Maps of Nodes 
 
 col = brewermap(3,'YlOrRd');
-figure('position',[0 0 1400 900]); ha=tight_subplot(nrow,ceil(grf.snds(3)/nrow),[0.01 0],0,0);
+figure('position',[0 0 1400 900]); 
+tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
 
 [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
 
@@ -119,7 +120,7 @@ for i_gr=1:numel(GR)
     [Slat,Slon,St]=ind2sub(GR{i_gr}.snds,GR{i_gr}.s);
     [Tlat,Tlon,Tt]=ind2sub(GR{i_gr}.snds,GR{i_gr}.t);
     for i_s = 1:GR{i_gr}.snds(3)
-        axes(ha(i_s));
+        nexttile(i_s);
         if i_gr==1    
             hold on; set(gca,'Color','k')
             borders('countries','w')
@@ -156,17 +157,21 @@ end
 
 
 %% Wind
-figure; ha=tight_subplot(nrow,ceil(grf.snds(3)/nrow),[0.01 0],0,0);
-for i_s = 1:height(sta{lt})-1
-    st_id = find(St==i_s);
-    WindRose(rad2deg(angle(grf.ws(st_id))), abs(grf.ws(st_id)),'axes',ha(i_s), 'LegendType', 1);
-end
- 
+% figure;
+% tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
+% for i_s = 1:height(sta{lt})-1
+%     st_id = find(St==i_s);
+%     nexttile(i_s)
+%     WindRose(rad2deg(angle(grf.ws(st_id))), abs(grf.ws(st_id)),'axes',gca, 'LegendType', 1);
+% end
+%  
 
 %% Map of possible presence
-figure; ha=tight_subplot(nrow,ceil(grf.snds(3)/nrow),[0.01 0],0,0);
+figure;
+tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
 for i_s = 1:grf.snds(3)
-    axes(ha(i_s)); hold on; set(gca,'Color','k')
+    nexttile(i_s);
+    hold on; set(gca,'Color','k')
     borders('countries','w')
     imagesc(grf.lon,grf.lat,grf.M(:,:,i_s),'alphadata',~grf.M(:,:,i_s)==0)
     axis equal; axis([min(grf.lon) max(grf.lon) min(grf.lat) max(grf.lat) ]);
