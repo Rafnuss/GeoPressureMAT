@@ -8,7 +8,7 @@ load("../data/processedData.mat")
 sta_sm=cell(1,height(tblLog));
 for lt=1:height(tblLog)
     if strcmp(tblLog.CommonName{lt},'Eurasian Nightjar')
-        grp_id = hours(sta{lt}.end-sta{lt}.start)>24;%sta{lt}.twlNb>=4;
+        grp_id = hours(sta{lt}.end-sta{lt}.start)>48;%sta{lt}.twlNb>=4;
     else
         grp_id = hours(sta{lt}.end-sta{lt}.start)>0;%sta{lt}.twlNb>=4;
     end
@@ -26,48 +26,30 @@ end
 
 %% 
 
-lt=2;
+gr=cell(height(tblLog),1);
 % lt=find(tblLog.GDL_ID == "22QO"); % 22QL
 
-prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
 thr_prob_percentile = .99;
-
-tic
-[gr1,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile);
-toc
-gr2 = filterGraph(gr1,'gs',100);
-toc
-gr3 = windSpeedGraph(gr2,raw{lt},sta{lt},sta{lt},activityMig{lt});
-toc
-gr3 = filterGraph(gr3,'as',70);
-toc
-% G=digraph(string(S),string(T));
-% unique(conncomp(G,'Type','weak'))
+mvt_pdf = movementModel('energy');
 
 
-%% Movement Model and probability total
+for lt=1:height(tblLog)
+    prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
+    tic
+    [grt,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile);
+    grt = filterGraph(grt,'gs',100);
+    grt = windSpeedGraph(grt,raw{lt},sta{lt},sta{lt},activityMig{lt});
+    grt = filterGraph(grt,'as',70);
+    grt.p = grt.ps .* mvt_pdf(abs(grt.as));
+    grt.M = probMapGraph(grt);
+    grt.sp = shortestPathGraph(grt);
+    gr{lt} = grt;
+    t=toc;
+    disp([tblLog.GDL_ID{lt} ' ' num2str(t,3) ' sec'])
+end
 
-speed_x = (0:1000)';
-speed_y = gampdf(speed_x,7,7);
-speed_y(speed_y<.005&speed_x<40)=.005;
-
-mvt_pdf = @(x) speed_y(min(round(x)+1,1000));
-
-% figure; plot(speed_x*1000/60/60, speed_y./sum(speed_y)); xlim([0 50]); hold on; 
-
-% probability is static prob of target x airspeed prob
-gr3.p = gr3.ps .* mvt_pdf(abs(gr3.as));
-
-
-
-%% Marignal probability map
-gr3.M = probMapGraph(gr3);
-
-
-%% Shortest path
-
-gr3.sp = shortestPathGraph(gr3);
-
+save('../data/graph.mat','gr','-v7.3')
+load('../data/graph.mat')
 
 
 
@@ -84,20 +66,21 @@ gr3.sp = shortestPathGraph(gr3);
 
 
 %% Seletect option for ploting
-grf = gr3;
+lt=12;
+tblLog.CommonName{lt}
+grf = gr{lt};
 nrow=4;
 
 
 %% Histogram of speed
 
-
 [Slat,Slon,St]=ind2sub(grf.snds,grf.s);
 [Tlat,Tlon,Tt]=ind2sub(grf.snds,grf.t);
 
 figure('position',[0 0 2400 1000]);
-tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
+tiledlayout('flow','TileSpacing','none','Padding','none')
 for i_s = 1:height(sta{lt})-1
-    nexttile(i_s); hold on
+    nexttile; hold on
     histogram(abs(grf.gs(St==i_s)),0:5:100);
     histogram(abs(grf.as(St==i_s)),0:5:50);
     histogram(abs(grf.ws(St==i_s)),0:5:50);
@@ -110,7 +93,7 @@ end
 
 col = brewermap(3,'YlOrRd');
 figure('position',[0 0 1400 900]); 
-tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
+tiledlayout('flow','TileSpacing','none','Padding','none')
 
 [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
 
@@ -120,9 +103,9 @@ for i_gr=1:numel(GR)
     [Slat,Slon,St]=ind2sub(GR{i_gr}.snds,GR{i_gr}.s);
     [Tlat,Tlon,Tt]=ind2sub(GR{i_gr}.snds,GR{i_gr}.t);
     for i_s = 1:GR{i_gr}.snds(3)
-        nexttile(i_s);
+        nexttile(i_s);hold on;
         if i_gr==1    
-            hold on; set(gca,'Color','k')
+             set(gca,'Color','k')
             borders('countries','w')
             axis equal; axis([min(GR{i_gr}.lon) max(GR{i_gr}.lon) min(GR{i_gr}.lat) max(GR{i_gr}.lat) ]);
         end
@@ -156,19 +139,12 @@ end
 % end
 
 
-%% Wind
-% figure;
-% tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
-% for i_s = 1:height(sta{lt})-1
-%     st_id = find(St==i_s);
-%     nexttile(i_s)
-%     WindRose(rad2deg(angle(grf.ws(st_id))), abs(grf.ws(st_id)),'axes',gca, 'LegendType', 1);
-% end
-%  
 
-%% Map of possible presence
+
+
+%% Map of posteriori pdf
 figure;
-tiledlayout(nrow,ceil(grf.snds(3)/nrow),'TileSpacing','none','Padding','none')
+tiledlayout('flow','TileSpacing','none','Padding','none')
 for i_s = 1:grf.snds(3)
     nexttile(i_s);
     hold on; set(gca,'Color','k')
@@ -181,6 +157,100 @@ colormap("pink") % copper, bone
 
 
 %% 
+for lt=1:height(tblLog)
+    
+    figure('position',[0 0 900 1200], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] ); hold on
+    
+   
+    set(gca,'Color',[.5 .5 .5])
+    [gLON,gLAT] = meshgrid(lon{lt},lat{lt}); 
+    path_mean=nan(height(sta_sm{lt}),2);
+    imagesc(lon{lt},lat{lt},ones(numel(lat{lt}),numel(lon{lt}),3).*reshape([0 0 0],1,1,3),'AlphaData',~mask_water{lt});
+    
+    borders('countries','w')
+    plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2)
+    axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+    set(gca,'ydir','normal');xticks([]);yticks([])
+    set(gca,'LooseInset',get(gca,'TightInset'));
+    
+    colordergrad=crameri('batlow',height(sta_sm{lt}));
+    t = sta_sm{lt}.start + (sta_sm{lt}.end-sta_sm{lt}.start)/2;
+    
+    colorinterp = interp1(datenum(t),colordergrad,datenum(sta_sm{lt}.start(1):sta_sm{lt}.end(end)));
+    colormap(colorinterp)
+    c=colorbar('south'); c.Color='w'; c.FontSize=12;
+    c.Ticks=datenum(unique(dateshift(t(1):t(end),'start','month'))-t(1))/datenum(t(end)-t(1));
+    c.TickLabels=datestr(unique(dateshift(t(1):t(end),'start','month')),'mmm');
+       
+    
+    % gif(['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.gif'],'overwrite',true,'DelayTime',(5+height(sta_sm{lt})/10)/height(sta_sm{lt}),'frame',gca)
+    
+    path_short = [lon{lt}(gr{lt}.sp.lon) lat{lt}(gr{lt}.sp.lat)];
+
+    for i_s = 1:height(sta_sm{lt})
+        f=gr{lt}.M(:,:,i_s);
+        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./max(f(:)));
+        
+       
+        p=plot(path_short(1:i_s,1),path_short(1:i_s,2),'w','linewidth',2);
+        
+        for i_ss = 1:i_s
+            sz = 20+(hours(sta_sm{lt}.end(i_ss)-sta_sm{lt}.start(i_ss)))/100;
+            p2(i_ss,1) = plot(path_short(i_ss,1),path_short(i_ss,2),'.w', 'MarkerSize',sz+15);
+            p2(i_ss,2) = plot(path_short(i_ss,1),path_short(i_ss,2),'.', 'MarkerSize',sz,'color',colordergrad(i_ss,:));
+        end
+        % keyboard
+        
+        % gif
+        % tiadd = datenum([sta_sm{lt}.start(i_s) sta_sm{lt}.end(i_s)]-t(1))/datenum(t(end)-t(1));
+        %pause(1)
+        if i_s<height(sta_sm{lt})
+            delete(p);   delete(p2)
+        end
+    end
+    
+ 
+    exportgraphics(gca,['graph_probMap_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'])
+    keyboard
+    %close all
+end
+
+
+
+
+%% Wind
+thr_dist=200; % km
+
+for lt=1:height(tblLog)
+    [Slat,Slon,St]=ind2sub(gr{lt}.snds,gr{lt}.s);
+    [Tlat,Tlon,Tt]=ind2sub(gr{lt}.snds,gr{lt}.t);
+
+
+    path_short = [lon{lt}(gr{lt}.sp.lon) lat{lt}(gr{lt}.sp.lat)];
+    path_short_dist = lldistkm(path_short(1:end-1,:),path_short(2:end,:));
+
+    figure('position',[0 0 900 1200], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] ); hold on
+    borders('countries','k')
+    plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2)
+    
+    plot(path_short(:,1),path_short(:,2),'color',[.3 .3 .3],'Linewidth',1)
+   
+    ss = find(path_short_dist>thr_dist);
+    for i_ss= 1:numel(ss)
+        i_s=ss(i_ss);
+        plot(path_short(i_s:i_s+1,1),path_short(i_s:i_s+1,2),'color','k','Linewidth',2)
+        st_id = find(St==i_s);
+        WindRose(rad2deg(angle(gr{lt}.ws(st_id))), abs(gr{lt}.ws(st_id)),'X',mean(path_short(i_s:i_s+1,1)),'Y',mean(path_short(i_s:i_s+1,2)), 'LegendType', 0, 'labels','','scalefactor',2,'nfreq',1,'vWinds', [0 5 10 20 30 40]);
+        % axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+        % keyboard
+    end
+    
+    axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+    colormap(crameri('batlow'));
+    scatter(path_short(:,1),path_short(:,2),100,1:height(sta_sm{lt}),'filled','MarkerEdgeColor','k')
+    exportgraphics(gca,['graph_windspeed_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'])
+end
+ 
 
 
 
