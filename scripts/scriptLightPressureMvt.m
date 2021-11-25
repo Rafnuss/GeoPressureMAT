@@ -374,8 +374,9 @@ end
 
 %% Figure paper
 
-lt=find(tblLog.GDL_ID == "22QO"); % 22QL
-
+lt=find(tblLog.GDL_ID == "18IC"); % 22QL 22QO
+dt = 1./hours(diff(raw{lt}.pressure.date(1:2)));
+  
 figure; hold on
 plot(raw{lt}.pressure.date,raw{lt}.pressure.obsWithOutliars,'color',[.4 .4 .4]); 
 for i_s = 1:height(sta{lt})
@@ -391,25 +392,26 @@ xlim([dateshift(sta{lt}.end(9),'start','day') dateshift(sta{lt}.start(end),'star
 ylim([650 1050])
 
 
-% [DEM,R] = readgeoraster('DEM/export_DEM-0000000000-0000000000.tif');
-% DEM = flipud(DEM);
-% dem_lat = (R.LatitudeLimits(1)+R.CellExtentInLatitude/2):R.CellExtentInLatitude:(R.LatitudeLimits(2)-R.CellExtentInLatitude/2);
-% dem_lon = (R.LongitudeLimits(1)+R.CellExtentInLongitude/2):R.CellExtentInLongitude:(R.LongitudeLimits(2)-R.CellExtentInLongitude/2);
-% [~,id_lat_tmp]=min(abs(raw{lt}.calib.lat-lat_g));
-% [~,id_lon_tmp]=min(abs(raw{lt}.calib.lon-lon_g));
-% dl=.125+0.25*3;
-% id_lat_dem=(lat_g(id_lat_tmp)-dl)<=dem_lat & (lat_g(id_lat_tmp)+dl)>=dem_lat;
-% id_lon_dem=(lon_g(id_lon_tmp)-dl)<=dem_lon & (lon_g(id_lon_tmp)+dl)>=dem_lon;
-% dem_lon=dem_lon(id_lon_dem);
-% dem_lat=dem_lat(id_lat_dem);
-% DEM = DEM(id_lat_dem,id_lon_dem);
-% save('DEM/DEM_lt9.mat','DEM','dem_lat','dem_lon')
-load('../data/DEM/DEM_lt9.mat')
+[DEM,R] = readgeoraster('../data/DEM/export_DEM-0000000000-0000000000.tif');
+DEM = flipud(DEM);
+dem_lat = (R.LatitudeLimits(1)+R.CellExtentInLatitude/2):R.CellExtentInLatitude:(R.LatitudeLimits(2)-R.CellExtentInLatitude/2);
+dem_lon = (R.LongitudeLimits(1)+R.CellExtentInLongitude/2):R.CellExtentInLongitude:(R.LongitudeLimits(2)-R.CellExtentInLongitude/2);
+dlatlon=0.25;
+dl=dlatlon/2+dlatlon*3;
+id_lat_dem=(raw{lt}.calib.lat-dl)<=dem_lat & (raw{lt}.calib.lat+dl)>=dem_lat;
+id_lon_dem=(raw{lt}.calib.lon-dl)<=dem_lon & (raw{lt}.calib.lon+dl)>=dem_lon;
+dem_lon=dem_lon(id_lon_dem);
+dem_lat=dem_lat(id_lat_dem);
+DEM = DEM(id_lat_dem,id_lon_dem);
+save(['../data/DEM/DEM_' raw{lt}.GDL_ID '.mat'],'DEM','dem_lat','dem_lon','dlatlon')
+load('../data/DEM/DEM_18IC.mat')
 
 [~,id_s]=sort(DEM(:));
 [dem_LON,dem_LAT] = meshgrid(dem_lon,dem_lat);
 
-id_ss=id_s(dem_LON(id_s)>=10.875 & dem_LON(id_s)<=11.125 & dem_LAT(id_s)>=51.625 & dem_LAT(id_s)<=51.875);
+ERA5_gridcell = round([raw{lt}.calib.lon raw{lt}.calib.lat]/dlatlon)*dlatlon;
+
+id_ss=id_s(dem_LON(id_s)>=ERA5_gridcell(1)-dlatlon/2 & dem_LON(id_s)<=ERA5_gridcell(1)+dlatlon/2 & dem_LAT(id_s)>=ERA5_gridcell(2)-dlatlon/2 & dem_LAT(id_s)<=ERA5_gridcell(2)+dlatlon/2);
 [id_min_lat,id_min_lon]=ind2sub(size(DEM),id_ss(1));
 [id_max_lat,id_max_lon]=ind2sub(size(DEM),id_ss(end));
 
@@ -426,18 +428,21 @@ imagesc(dem_lon,dem_lat,DEM)
 scatter(dem_lon(id_min_lon),dem_lat(id_min_lat),'ok','filled')
 scatter(dem_lon(id_max_lon),dem_lat(id_max_lat),'ok','filled')
 scatter(tblLog.LongitudeAttached(lt),tblLog.LatitudeAttached(lt),200,col(1,:),'o','filled')
-xline((10:.25:12)+.25/2,'--')
-yline((51:.25:53)+.25/2,'--')
+xline(ERA5_gridcell(1)+ [-dlatlon/2 +dlatlon/2],'--')
+yline(ERA5_gridcell(2)+ [-dlatlon/2 +dlatlon/2],'--')
 
 demcmap([calibGeoDEM(lt,2) calibGeoDEM(lt,3)]); set(gca,'ydir','normal')
-axis equal; axis([10.98 11.27 51.73 52.02]-.25/2)
+axis equal; axis([ERA5_gridcell(1)+[-1 1]*dlatlon*.6 ERA5_gridcell(2)+[-1 1]*dlatlon*.6])
 colorbar;
 
 figure; set(gca,'ydir','normal')
 mask = 0.3+0.7*double(pres_thr{lt}(:,:,1));
 mask(mask_water{lt}) = 0;
 imagesc(lon{lt},lat{lt},pres_prob{lt}(:,:,1),'AlphaData',mask);
-set(gca,'Color','k')
+set(gca,'Color','k'); 
+borders('countries','w');
+set(gca,'ydir','normal')
+axis equal; axis([6 23 40 53])
 
 
 
@@ -714,6 +719,160 @@ dpptl([5 11 12],:)=nan;
 % figure; plot(1:16,dpptl(:,1),'o')
 nanmean(dpptl(:,1))
 
+%%
+%%
+sta_sm=cell(1,height(tblLog));
+for lt=1:height(tblLog)
+    grp_id = hours(sta{lt}.end-sta{lt}.start)>12;%sta{lt}.twlNb>=4;
+    grp_id(1) = true;
+    if ~isnat(tblLog.CalibSecondStart(lt))
+        grp_id(end) = true;
+    end
+    sta_sm{lt} = sta{lt}(grp_id,:);
+    sta_sm{lt}.actNb =  splitapply(@sum, sta{lt}.actNb,cumsum(grp_id));
+    sta_sm{lt}.actEffort =  splitapply(@sum, sta{lt}.actEffort,cumsum(grp_id));
+    sta_sm{lt}.actDuration =  splitapply(@sum, sta{lt}.actDuration,cumsum(grp_id));
+    sta_sm{lt}.twlNbStopover =  splitapply(@sum, sta{lt}.twlNb,cumsum(grp_id))-sta_sm{lt}.twlNb;
+    sta_sm{lt}.staID = find(grp_id);
+end
+
+
+mvt_pdf = movementModel('energy');
+
+%%
+% subp_row=2*ones(1,height(tblLog));
+% subp_row([11 12])=3;
+% subp_row([15 16])=1;
+for lt=1:1%height(tblLog)
+ 
+    figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
+    tiledlayout('flow','TileSpacing','tight','Padding','tight')
+    %[ha, pos] = tight_subplot(1,ceil(height(sta_sm{lt})),[.03 .01],[.01 .03],.01);
+    % [ha, pos] = tight_subplot(2,ceil(height(sta_sm{lt})/2),[.03 .01],[.01 .03],.01);
+    % [ha, pos] = tight_subplot(3,ceil(height(sta_sm{lt})/3),[.03 .01],[.01 .03],.01);
+    %ha = tight_subplot(4,ceil(height(sta_sm{lt})/4),[.03 .01],[.01 .03],.01);
+    % ha = tight_subplot(subp_row(lt),ceil(height(sta_sm{lt})/subp_row(lt)),[.03 .01],[.01 .03],.01);
+    [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
+    for i_s = 1:find(sta_sm{lt}.status=="wintering")%height(sta_sm{lt})
+        % axes(ha(i_s)); hold on;
+        nexttile
+        
+        % figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
+        
+        %set(gca,'Color','k')
+        tmp_p = pres_prob{lt}(:,:,sta_sm{lt}.staID(i_s));
+        tmp_pt = pres_thr{lt}(:,:,sta_sm{lt}.staID(i_s));
+        tmp_l = light_prob{lt}(:,:,sta_sm{lt}.staID(i_s));
+        
+        
+        % Option 1
+        mask = 0.3+0.7*double(tmp_pt);
+        mask(mask_water{lt}) = 0;
+        img_tmp = real2rgb(tmp_p,colormap);
+        img_tmp = img_tmp.*mask;
+        
+        imagesc(lon{lt},lat{lt},img_tmp)
+        borders('countries','w')
+        % imagesc(lon{lt},lat{lt},tmp_p,'AlphaData',mask); 
+        c_axis=caxis();
+        contour(lon{lt},lat{lt},tmp_l,2,'color',[255, 252, 49]/255,'linewidth',2);
+        
+        tt = datestr(sta_sm{lt}.start(i_s),'dd-mmm HH:MM') + " to " + datestr(sta_sm{lt}.end(i_s),'dd-mmm HH:MM');
+        tt = tt+ " (pres.: "+ num2str(pres_n{lt}(i_s)) + " hrs, light: "+ num2str(sta_sm{lt}.twlNb(i_s) + " twls)");
+        
+        if i_s>1
+            tt = tt+ " | flight: "+num2str(round(hours(sta_sm{lt}.actEffort(max(1,i_s-1))))) + " hrs"  ;
+            % tt = {tt{:} num2str(sta_sm{lt}.actNb(max(1,i_s-1))) + "act";
+            if exist('path','var')
+                path_mean(i_s,:) = median([gLON(path{lt}(sta_sm{lt}.staID(i_s),:)') gLAT(path{lt}(sta_sm{lt}.staID(i_s),:)')]);
+                tmpd = reshape(lldistkm([path_mean(i_s-1,2) path_mean(i_s-1,1)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
+                plot(path_mean(i_s-1,1), path_mean(i_s-1,2),'ow','MarkerSize',8,'markerFaceColor','g','linewidth',3)
+                plot(path_mean(i_s,1), path_mean(i_s,2),'or','linewidth',2,'MarkerSize',8)
+            else
+                tmpd = reshape(lldistkm([gLAT(id) gLON(id)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
+                plot(gLON(id), gLAT(id),'ow','MarkerSize',8,'markerFaceColor','g','linewidth',3)
+                [~,id]=max(tmp_p(:).*tmp_pt(:).*tmp_l(:).*mvt_pdf(tmpd(:)));
+                plot(gLON(id), gLAT(id),'or','linewidth',2,'MarkerSize',8)
+            end
+            contour(lon{lt},lat{lt},tmpd,[7 17]/1000*60*60,'-g','linewidth',2); % ,'ShowText','on'
+            
+        else
+            clear path_mean
+            path_mean(i_s,:) = median([gLON(path{lt}(sta_sm{lt}.staID(i_s),:)') gLAT(path{lt}(sta_sm{lt}.staID(i_s),:)')]);
+            [~,id]=max(tmp_p(:).*tmp_pt(:).*tmp_l(:));
+            plot(gLON(id), gLAT(id),'or','linewidth',2,'MarkerSize',8)
+        end
+
+        % t=text(.01,.8,tt,'Units','normalized','FontSize',40,'FontWeight','bold','Color','w','VerticalAlignment','top');
+
+        % title(tt)
+
+        caxis(c_axis);
+        
+        plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'ow','MarkerSize',6,'markerFaceColor','r')
+        
+        axis equal; axis([3 max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+        set(gca,'ydir','normal');
+        yticks([]);xticks([])
+        
+%         x0=[raw{lt}.calib.lon-4 raw{lt}.calib.lat-4];
+%         dx = 1./[lldistkm(x0,x0+[1 0]) lldistkm(x0,x0+[0 1])]*100;
+%         h=plot([x0(1) x0(1)], [x0(2) x0(2)+dx(2)], '-r', 'LineWidth', 2);%label(h,'100km','location','middle','slope')
+%         h=plot([x0(1) x0(1)+dx(1)], [x0(2) x0(2)],'-r', 'LineWidth', 2); label(h,'100km')
+%         
+        %exportgraphics(gcf,['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '_' num2str(i_s) '.eps'])
+        %keyboard
+        % close all
+        
+    end
+     
+    % exportgraphics(gcf,['combined_map_48h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',300)
+end
+
+
+%% 
+A=flipud([imread('../data/DEM/land_shallow_topo_west.tif') imread('../data/DEM/land_shallow_topo_east.tif')]);
+y=linspace(-180,180,size(A,2));
+x=linspace(-90,90,size(A,1));
+A2 = A(x>=min(glat) & x<=max(glat) , y>=min(glon) & y<=max(glon),:);
+x2=x(x>=min(glat) & x<=max(glat));
+y2=y(y>=min(glon) & y<=max(glon));
+
+figure; hold on
+imagesc(y2,x2,A2); axis equal tight; set(gca,'ydir','normal')
+
+% axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+
+for lt=1:height(tblLog)
+    a = pres_thr{lt}(:,:,sta{lt}.status=="wintering").*pres_prob{lt}(:,:,sta{lt}.status=="wintering");
+    a = a./ sum(a(:));
+    [as,asid]=sort(a(:));
+    tmp_m=true(size(a));
+    % tmp_m(asid(cumsum(as)<.8))=true;
+    th=as(find(cumsum(as)>.1,1));
+    % tmp_m(asid(cumsum(as)<.1))=false;
+    
+   
+    [~,id_ppt]=max(a(:));
+
+    [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
+
+    plot(gLON(id_ppt),gLAT(id_ppt),'ow','MarkerFaceColor',tblLog.Color(lt,:))
+    
+    imcontour(gLON,gLAT,a,2,'Color',tblLog.Color(lt,:),'linewidth',4)
+     %P = mask2poly(tmp_m');
+    
+%     for i_p=1:numel(P)
+%             plot(lon{lt}(P(i_p).Y),lat{lt}(P(i_p).X),'Color',tblLog.Color(lt,:),'LineWidth',2)
+%            
+% %             if lt==7 | lt==8 | lt==11
+% %                 wmpolygon((lat{lt}(P(i_p).X)),(lon{lt}(P(i_p).Y)),'EdgeColor',tblLog.Color(lt,:),'FaceAlpha',0,'LineWidth',2)
+% %             else
+% %                  end
+%     end
+    % keyboard
+end
+
 
 %% Webmap
 webmap('worldimagery')
@@ -722,7 +881,7 @@ for lt=1:height(tblLog)
     if lt==11 | lt==12
         continue
     end
-    a = pres_thr{lt}(:,:,iws).*pres_prob{lt}(:,:,iws);
+    a = pres_thr{lt}(:,:,sta{lt}.status=="wintering").*pres_prob{lt}(:,:,sta{lt}.status=="wintering");
     a = a./ sum(a(:));
     [as,asid]=sort(a(:));
     tmp_m=false(size(a));
@@ -755,216 +914,4 @@ end
 %     R = georasterref('RasterSize',size(A),'LatitudeLimits',[min(lat{lt}),max(lat{lt})],'LongitudeLimits',[min(lon{lt}),max(lon{lt})]);
 %     geotiffwrite(['pressure_winter_map_' raw{lt}.GDL_ID '.tif' ],A./ sum(A(:)),R)
 % end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% Keep only long stationary period
-sta_sm=cell(1,height(tblLog));
-for lt=1:height(tblLog)
-    grp_id = hours(sta{lt}.end-sta{lt}.start)>10;%sta{lt}.twlNb>=4;
-    grp_id(1) = true;
-    if ~isnat(tblLog.CalibSecondStart(lt))
-        grp_id(end) = true;
-    end
-    sta_sm{lt} = sta{lt}(grp_id,:);
-    sta_sm{lt}.actNb =  splitapply(@sum, sta{lt}.actNb,cumsum(grp_id));
-    sta_sm{lt}.actEffort =  splitapply(@sum, sta{lt}.actEffort,cumsum(grp_id));
-    sta_sm{lt}.actDuration =  splitapply(@sum, sta{lt}.actDuration,cumsum(grp_id));
-    sta_sm{lt}.twlNbStopover =  splitapply(@sum, sta{lt}.twlNb,cumsum(grp_id))-sta_sm{lt}.twlNb;
-    sta_sm{lt}.staID = find(grp_id);
-end
-
-
-
-%% Location based on light only
-
-q = [.1 .2 .5 .8 .9];
-for lt=1:height(tblLog)
-    for i_s = 1:height(sta_sm{lt})
-        crds_tmp = coord(twl{lt}(twl{lt}.staID==sta_sm{lt}.staID(i_s),:), gE{lt}.medZ);
-        sta_sm{lt}.crds_lat(i_s,:) = quantile(crds_tmp.lat(~crds_tmp.isOutliar),q);
-        sta_sm{lt}.crds_lon(i_s,:) = quantile(crds_tmp.lon(~crds_tmp.isOutliar),q);
-    end
-end
-
-% 
-% 
-% % plot
-% figure; 
-% for lt=1:height(tblLog)
-%     subplot(3,4,lt); dl=5;hold on;
-%     h = worldmap([floor(min(sta_sm{lt}.crds_lat(:,3)))-dl ceil(max(sta_sm{lt}.crds_lat(:,3)))+dl],[floor(min(sta_sm{lt}.crds_lon(:,3)))-dl ceil(max(sta_sm{lt}.crds_lon(:,3)))+dl]); 
-%     setm(h,'frame','on','grid','off'); set(findall(h,'Tag','MLabel'),'visible','off'); set(findall(h,'Tag','PLabel'),'visible','off')
-%     bordersm('countries','k'); title([raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}])
-%     plotm(raw{lt}.calib.lat,raw{lt}.calib.lon,'xr')
-%     %id=~any(isnan(sta_sm{lt}.crds_lon)&isnan(sta{lt}.crds_lat),2);
-%     %plotm(sta{lt}.crds_lat(id,3),sta{lt}.crds_lon(id,3),'-','color',[.7 .7 .7])
-%     plotm(sta_sm{lt}.crds_lat(:,3),sta_sm{lt}.crds_lon(:,3),'--k')
-%     for i_s = 1:height(sta_sm)
-%         plotm(sta_sm{lt}.crds_lat(i_s,[2 4]),sta_sm{lt}.crds_lon(i_s,[3 3]),'Color',colorder(i_s,:),'linewidth', 2)
-%         plotm(sta_sm{lt}.crds_lat(i_s,[3 3]),sta_sm{lt}.crds_lon(i_s,[2 4]),'Color',colorder(i_s,:),'linewidth', 2)
-%     end
-%     tmp = ~any(isnan(sta_sm{lt}.crds_lat),2);
-%     scatterm(sta_sm{lt}.crds_lat(tmp,3),sta_sm{lt}.crds_lon(tmp,3),sta_sm{lt}.twlNb(tmp)/2,colorder(1:sum(tmp),:),'o','filled')
-% end
-
-
-% 
-% for lt=1:height(tblLog)
-%     figure('position',[0 0 2400 1000], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
-%     for i_s = 1:height(sta_sm{lt})
-%         subplot(2,ceil(height(sta_sm{lt})/2),i_s); hold on;
-%         imagesc(lon{lt},lat{lt},light_prob{lt}(:,:,sta_sm{lt}.staID(i_s)),'AlphaData',~mask_water{lt});
-%         colorbar;
-% 
-%         borders('countries','w')
-%         plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr')
-% 
-%         tt = num2str(sta_sm{lt}.staID(i_s));
-%         tt = tt + "|" + num2str(sta_sm{lt}.twlNb(i_s))+"twls";
-%         tt = tt + "|" + datestr(sta_sm{lt}.end(i_s),'dd-mmm-yyyy');
-%         tt = tt + "|" + num2str(round(hours(sta_sm{lt}.actEffort(max(1,i_s))))) + "hr";
-%         title(tt)
-%         axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
-%     end
-% end
-
-
-
-%% Movement model
-AvgSpeed=nan(2,height(tblLog));
-for lt=1:height(tblLog)
-
-    [~,id]=maxk(sta_sm{lt}.twlNb,3);
-    if isnat(tblLog.CalibSecondStart(lt))
-        id=sort(id(1:2));
-    else
-        id=sort(id);
-    end
-    
-    dmin = lldistkm([sta_sm{lt}.crds_lat(id(1:end-1),3) sta_sm{lt}.crds_lon(id(1:end-1),3)],[sta_sm{lt}.crds_lat(id(2:end),3) sta_sm{lt}.crds_lon(id(2:end),3)]);
-    
-    G = sum((1:height(sta_sm{lt})>=id(1:end-1)&1:height(sta_sm{lt})<id(2:end)).*(1:numel(id)-1)',1)';
-    total_actEffort = hours(splitapply(@sum,sta_sm{lt}.actEffort,G+1));
-    AvgSpeed(1:numel(id)-1,lt) = dmin./total_actEffort(2:end);
-end
-
-% Mvt model
-
-speed_x = 0:1000;
-speed_y = gampdf(speed_x,7,7);
-speed_y(speed_y<.005&speed_x<40)=.005;
-%speed_y = (gampdf(speed_x,30,1/0.6));
-% speed_y = normpdf(speed_x,mean(AvgSpeed),diff(AvgSpeed)/2);
-
-mvt_pdf = @(x) interp1(speed_x,speed_y,x,'linear',eps);
-
-figure; box on;
-plot(speed_x,(mvt_pdf(speed_x))); 
-xlabel('speed (km/h)'); ylabel('pdf'); xlim([0 100])
-xline(AvgSpeed(~isnan(AvgSpeed)))
-
-% distLL = squareform(pdist([lat{lt}(:) lon{lt}(:)],@lldistkm))
-
-
-
-%% Combined map
-
-% subp_row=2*ones(1,height(tblLog));
-% subp_row([11 12])=3;
-% subp_row([15 16])=1;
-for lt=1:height(tblLog)
- 
-    %figure('position',[0 0 1600 900], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
-    %[ha, pos] = tight_subplot(1,ceil(height(sta_sm{lt})),[.03 .01],[.01 .03],.01);
-    % [ha, pos] = tight_subplot(2,ceil(height(sta_sm{lt})/2),[.03 .01],[.01 .03],.01);
-    % [ha, pos] = tight_subplot(3,ceil(height(sta_sm{lt})/3),[.03 .01],[.01 .03],.01);
-    %ha = tight_subplot(4,ceil(height(sta_sm{lt})/4),[.03 .01],[.01 .03],.01);
-    % ha = tight_subplot(subp_row(lt),ceil(height(sta_sm{lt})/subp_row(lt)),[.03 .01],[.01 .03],.01);
-    [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
-    for i_s = 1:height(sta_sm{lt})
-        % axes(ha(i_s)); hold on;
-        
-        figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
-        
-        %set(gca,'Color','k')
-        tmp_p = pres_prob{lt}(:,:,sta_sm{lt}.staID(i_s));
-        tmp_pt = pres_thr{lt}(:,:,sta_sm{lt}.staID(i_s));
-        tmp_l = light_prob{lt}(:,:,sta_sm{lt}.staID(i_s));
-        
-        
-        % Option 1
-        mask = 0.3+0.7*double(tmp_pt);
-        mask(mask_water{lt}) = 0;
-        img_tmp = real2rgb(tmp_p,colormap);
-        img_tmp = img_tmp.*mask;
-        
-        imagesc(lon{lt},lat{lt},img_tmp)
-        borders('countries','w')
-        % imagesc(lon{lt},lat{lt},tmp_p,'AlphaData',mask); 
-        c_axis=caxis();
-        contour(lon{lt},lat{lt},tmp_l,3,'color',[255, 252, 49]/255,'linewidth',2);
-        
-
-        
-        tt = datestr(sta_sm{lt}.start(i_s),'dd-mmm HH:MM') + " to " + datestr(sta_sm{lt}.end(i_s),'dd-mmm HH:MM');
-        tt = tt+ " (pres.: "+ num2str(pres_n{lt}(i_s)) + " hrs, light: "+ num2str(sta_sm{lt}.twlNb(i_s) + " twls)");
-        
-        if i_s>1
-            tt = tt+ " | flight: "+num2str(round(hours(sta_sm{lt}.actEffort(max(1,i_s-1))))) + " hrs"  ;
-            % tt = {tt{:} num2str(sta_sm{lt}.actNb(max(1,i_s-1))) + "act";
-            if exist('path_mean','var')
-                tmpd = reshape(lldistkm([path_mean(i_s-1,2) path_mean(i_s-1,1)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
-                plot(path_mean(i_s-1,1), path_mean(i_s-1,2),'.w','linewidth',2,'MarkerSize',40)
-                plot(path_mean(i_s-1,1), path_mean(i_s-1,2),'.g','linewidth',2,'MarkerSize',30)
-                plot(path_mean(i_s,1), path_mean(i_s,2),'or','linewidth',2,'MarkerSize',12)
-            else
-                tmpd = reshape(lldistkm([gLAT(id) gLON(id)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
-                plot(gLON(id), gLAT(id),'.w','linewidth',2,'MarkerSize',40)
-                plot(gLON(id), gLAT(id),'.g','linewidth',2,'MarkerSize',30)
-                [~,id]=max(tmp_p(:).*tmp_pt(:).*tmp_l(:).*mvt_pdf(tmpd(:)));
-                plot(gLON(id), gLAT(id),'or','linewidth',2,'MarkerSize',12)
-            end
-            contour(lon{lt},lat{lt},tmpd,[7 17]/1000*60*60,'-g','linewidth',2); % ,'ShowText','on'
-            
-        else
-            [~,id]=max(tmp_p(:).*tmp_pt(:).*tmp_l(:));
-            plot(gLON(id), gLAT(id),'.w','MarkerSize',30)
-        end
-
-        % t=text(.01,.8,tt,'Units','normalized','FontSize',40,'FontWeight','bold','Color','w','VerticalAlignment','top');
-
-        title(tt)
-
-        caxis(c_axis);
-        
-        plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'.w','MarkerSize',40)
-        plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'.r','MarkerSize',30)
-        
-        axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
-        
-%         x0=[raw{lt}.calib.lon-4 raw{lt}.calib.lat-4];
-%         dx = 1./[lldistkm(x0,x0+[1 0]) lldistkm(x0,x0+[0 1])]*100;
-%         h=plot([x0(1) x0(1)], [x0(2) x0(2)+dx(2)], '-r', 'LineWidth', 2);%label(h,'100km','location','middle','slope')
-%         h=plot([x0(1) x0(1)+dx(1)], [x0(2) x0(2)],'-r', 'LineWidth', 2); label(h,'100km')
-%         
-        exportgraphics(gcf,['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '_' num2str(i_s) '.png'],'Resolution',300)
-        %keyboard
-        close all
-        
-    end
-     
-    % exportgraphics(gcf,['combined_map_48h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',300)
-end
 
