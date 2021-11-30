@@ -16,18 +16,6 @@ for lt=1:height(tblLog)
 end
 
 %%
-speed_x = 0:1000;
-speed_y = gampdf(speed_x,7,7);
-%speed_y = (gampdf(speed_x,30,1/0.6));
-% speed_y = normpdf(speed_x,mean(AvgSpeed),diff(AvgSpeed)/2);
-
-speed_y(speed_y<.005&speed_x<40)=.005;
-
-% mvt_pdf = @(x) interp1(speed_x,speed_y,x,'linear',eps);
-
-mvt_pdf = @(x) speed_y(min(round(x)+1,1000));
-
-plot(speed_x*1000/60/60, speed_y./sum(speed_y)); hold on; 
 
 %% Gibbs Sampling
 
@@ -40,7 +28,7 @@ for lt=1:height(tblLog)
     disp(raw{lt}.GDL_ID)
     
     % Map of probability
-    prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID);
+    prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID).^1/10;
     
     prob_map_r = reshape(prob_map,[], height(sta_sm{lt}));
     % set to 0 onver water
@@ -50,6 +38,7 @@ for lt=1:height(tblLog)
 
     [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
     % Ddist = pdist([gLAT(~mask_water{lt}) gLON(~mask_water{lt})],@lldistkm);
+    mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
     prob_mvt = @(pt,i_s,id) mvt_pdf(lldistkm([gLAT(pt) gLON(pt)],[gLAT(id) gLON(id)]) ./ hours(sta_sm{lt}.actEffort(i_s)));    
     
     % Define initial and fixed path
@@ -121,6 +110,21 @@ end
 %     axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
 %     colormap(pink)
 % end
+
+
+%% Convert Path to matrix
+probMapGibbs=cell(height(tblLog),1);
+
+for lt=1:height(tblLog)
+    probMapGibbs{lt}=nan(numel(lon{lt}),numel(lat{lt}),height(sta_sm{lt}));
+    for i_s = 1:height(sta_sm{lt})
+        [B,BG] = groupcounts(path{lt}(i_s,:)');
+        f=zeros(size(gLON));
+        f(BG)=B;
+        probMapGibbs{lt}(:,:,i_s)=f';
+    end
+end
+
 
 %% 
 

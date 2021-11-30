@@ -15,8 +15,9 @@ colorder = repmat(colorder,10,1);
 % Read metadata
 tblLog = readtable('../data/tracks/rawData.xlsx');
 tblLog = tblLog(tblLog.Usable,:);
-tblLog = tblLog(tblLog.StudyPressure,:);
-%tblLog = tblLog(tblLog.StudyTraquet,:);
+%tblLog = tblLog(tblLog.StudyPressure,:);
+tblLog = tblLog(tblLog.StudyTraquet,:);
+%tblLog = tblLog(tblLog.Kenya,:);
 tblLog.Color(cellfun(@isempty,tblLog.Color))={'000000'};
 tblLog.Color = hex2rgb(tblLog.Color);
 
@@ -214,6 +215,7 @@ for lt=1:height(tblLog)
     
     % Compute Pressue error map for each stationary period
     pres_rmse{lt} = nan(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
+    pres_prob{lt} = nan(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
     pres_thr{lt} = false(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
     pres_n{lt} = nan(height(sta{lt}),1);
 
@@ -288,6 +290,10 @@ for lt=1:height(tblLog)
             else
                 s=tblLog.std_pres(lt);
             end
+            if isnan(s)
+                warning('s cannot be zero. Use default 1')
+                s=1;
+            end
 
             w = log(pres_n{lt}(i_s))-1;
             % pres_rmse{lt}(:,:,i_s) = w .* mean((et/s).^2,3,'omitnan');
@@ -318,6 +324,6 @@ end
 toc
 
 %% 
-clear splt T2 err prese_rmse dh e x x_r sp* pres_ge id* pres_rmse pres_gr* y tmp file* i* s w dt et
+clear splt T2 err prese_rmse dh e x x_r sp* pres_ge id* pres_rmse pres_gr* y tmp file* i* s w dt et ans
 %clear gE % need to remove it to save
-% save('../data/processedData.mat')
+% save('../data/processedDataTraquet.mat')
