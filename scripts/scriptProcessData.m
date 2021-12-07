@@ -106,8 +106,10 @@ for lt=1:height(tblLog)
     else
         iws = id(1);
     end
-        
-    sta{lt}.status(iws)='wintering';
+    
+    if ~any(strcmp(tblLog.GDL_ID{lt},["16IT","16JB","TZ","DK","24EA","24EP","24IS"]))
+        sta{lt}.status(iws)='wintering';
+    end
     sta{lt}.status(1:height(sta{lt})<iws)='migration_post_equipement';
     sta{lt}.status(1:height(sta{lt})>iws)='migration_pre_retrival';
     sta{lt}.status(1)='equipment';
@@ -325,5 +327,5 @@ toc
 
 %% 
 clear splt T2 err prese_rmse dh e x x_r sp* pres_ge id* pres_rmse pres_gr* y tmp file* i* s w dt et ans
-%clear gE % need to remove it to save
-% save('../data/processedDataTraquet.mat')
+clear gE % need to remove it to save
+save('../data/processedDataTraquet.mat')
