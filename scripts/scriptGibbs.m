@@ -6,7 +6,7 @@ load("../data/processedData.mat")
 %% Keep only long stationary period
 sta_sm=cell(1,height(tblLog));
 for lt=1:height(tblLog)
-    grp_id = hours(sta{lt}.end-sta{lt}.start)>0;%sta{lt}.twlNb>=4;
+    grp_id = hours(sta{lt}.end-sta{lt}.start)>12;%sta{lt}.twlNb>=4;
     sta_sm{lt} = sta{lt}(grp_id,:);
     sta_sm{lt}.actNb =  splitapply(@sum, sta{lt}.actNb,cumsum(grp_id));
     sta_sm{lt}.actEffort =  splitapply(@sum, sta{lt}.actEffort,cumsum(grp_id));
@@ -59,8 +59,8 @@ for lt=1:height(tblLog)
     % interpolate position for short stationary period
     path0(hours(sta_sm{lt}.end-sta_sm{lt}.start)<=48)=nan;
     [path_lat,path_lon] = ind2sub(size(gLAT),path0);
-    path_lat0 = round(fillmissing(path_lat,'linear'));
-    path_lon0 = round(fillmissing(path_lon,'linear'));
+    path_lat0 = max(1,min(numel(lat{lt}),round(fillmissing(path_lat,'linear'))));
+    path_lon0 = max(1,min(numel(lon{lt}),round(fillmissing(path_lon,'linear'))));
 
     path{lt} = nan(height(sta_sm{lt}),nj*np);
     for i_p=1:np
