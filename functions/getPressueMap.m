@@ -2,8 +2,8 @@ function [pres_prob, pres_thr, pres_n] = getPressueMap(pressure,sta,tblLog)
 %GETPRESSUEMAP Summary of this function goes here
 %   Detailed explanation goes here
 
-%base_url = "https://glp.mgravey.com/test.py?";
-base_url = "https://glp.mgravey.com/GeoLocGEEserver.py";
+base_url = "http://glp.mgravey.com/GeoLocPressure/v1/pressureMap.py";
+%base_url = "http://glp.mgravey.com/test.py?";
 
 data = struct2table(pressure);
 data.date = posixtime(pressure.date);
@@ -29,15 +29,17 @@ urls=webwrite(base_url,...
     "time", jsonencode(uint32(data.date)),"pressure",jsonencode(data.obs),"label",jsonencode(data.label),...
     weboptions('Timeout',20));
 
+display(urls)
 
+labelName = fieldnames(urls);
 
-for i_url=1:numel(urls)
+for i_url=1:numel(labelName)
     %A = imread(urls{i_url});
     %[A,R] = readgeoraster(urls{i_url});
 
-    A = webread(urls{i_url},weboptions('Timeout',60*5));
+    A = webread(urls.(labelName{i_url}),weboptions('Timeout',60*5));
 
-    A(:,:,2)
+    %A(:,:,2);
 
     % Get std
     s=repmat(tblLog.std_pres(lt),1,height(sta));
