@@ -3,6 +3,8 @@
 addpath(genpath('../functions'))
 load("../data/processedData.mat")
 
+scriptAltPres
+col = [42,71,94;126 71 149;38 38 38;5 102 47;135 53 19]/255;
 
 %% Illustration Dataset
 
@@ -114,13 +116,10 @@ end
 
 
 
-%% Download Pressure data
-scriptAltPres
 
 
 %% Pressure time serie at calibration site
 
-col = [42,71,94;126 71 149;38 38 38;5 102 47;135 53 19]/255;
 
 for lt=1:height(tblLog)
     dt = 1./hours(diff(raw{lt}.pressure.date(1:2)));
@@ -566,65 +565,67 @@ legend('Pressure','Light')
 dpptl=nan(height(tblLog),3);
 
 figure('position',[0 0 900 900]);
-ha = tight_subplot(4,4,[.03 .01],[.03 .02],[.03 .01]);
+tiledlayout('flow','TileSpacing','tight','Padding','tight')
 
 for lt=1:height(tblLog)
-    axes(ha(lt)); set(gca,'Color','k'); hold on;
-    [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
-
     iws=find(sta{lt}.status=="wintering");
-        
-    tmp_p = pres_prob{lt}(:,:,iws);
-    tmp_pt = pres_thr{lt}(:,:,iws);
-    tmp_l = light_prob{lt}(:,:,iws);
+    if ~isempty(iws)
+        nexttile; set(gca,'Color','k'); hold on;
+        [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
 
 
-    [~,id_l]=max(tmp_l(:));
-    [~,id_ppt]=max(tmp_p(:).*tmp_pt(:));
-    [~,id_lppt]=max(tmp_p(:).*tmp_l(:).*tmp_pt(:));
 
-    dpptl(lt,1)=lldistkm([gLAT(id_l) gLON(id_l)], [gLAT(id_ppt) gLON(id_ppt)]);
-    dpptl(lt,2) = sta{lt}.twlNb(iws)/2;
-    dpptl(lt,3) = days(sum(~isnan(raw{lt}.pressure.obs(raw{lt}.pressure.date > sta{lt}.start(iws) & raw{lt}.pressure.date < sta{lt}.end(iws))))*diff(raw{lt}.pressure.date(1:2)));
+        tmp_p = pres_prob{lt}(:,:,iws);
+        tmp_pt = pres_thr{lt}(:,:,iws);
+        tmp_l = light_prob{lt}(:,:,iws);
 
 
-    mask = 0.3+0.7*double(tmp_pt);
-    mask(mask_water{lt}) = 0;
-    img_tmp = real2rgb(tmp_p,colormap);
-    img_tmp = img_tmp.*mask;
+        [~,id_l]=max(tmp_l(:));
+        [~,id_ppt]=max(tmp_p(:).*tmp_pt(:));
+        [~,id_lppt]=max(tmp_p(:).*tmp_l(:).*tmp_pt(:));
 
-    h0=imagesc(lon{lt},lat{lt},img_tmp);
-    c_axis=caxis();
-    [~,h1]=contour(lon{lt},lat{lt},tmp_l,3,'color',[255, 252, 49]/255,'linewidth',2);
+        dpptl(lt,1)=lldistkm([gLAT(id_l) gLON(id_l)], [gLAT(id_ppt) gLON(id_ppt)]);
+        dpptl(lt,2) = sta{lt}.twlNb(iws)/2;
+        dpptl(lt,3) = days(sum(~isnan(raw{lt}.pressure.obs(raw{lt}.pressure.date > sta{lt}.start(iws) & raw{lt}.pressure.date < sta{lt}.end(iws))))*diff(raw{lt}.pressure.date(1:2)));
 
-    caxis(c_axis);
-    borders('countries','w')
 
-    tt = raw{lt}.GDL_ID + " | ";
-    % tt = tt+ num2str(sta{lt}.twlNb(iws))+"twls" + " | ";
-    tt = tt + datestr(sta{lt}.start(iws),'dd-mmm');
-    tt = tt + "-" + datestr(sta{lt}.end(iws),'dd-mmm');
-    title(tt)
+        mask = 0.3+0.7*double(tmp_pt);
+        mask(mask_water{lt}) = 0;
+        img_tmp = real2rgb(tmp_p,colormap);
+        img_tmp = img_tmp.*mask;
 
-    h2=scatter(gLON(id_l), gLAT(id_l),200,'MarkerFaceColor','y','MarkerEdgecolor','k');
-    h3=scatter(gLON(id_ppt), gLAT(id_ppt),200,'MarkerFaceColor','b','MarkerEdgecolor','k');
-    h4=plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2);
+        h0=imagesc(lon{lt},lat{lt},img_tmp);
+        c_axis=caxis();
+        [~,h1]=contour(lon{lt},lat{lt},tmp_l,3,'color',[255, 252, 49]/255,'linewidth',2);
 
-    if tblLog.GDL_ID{lt}=="20OA"
-        x00 = [gLON(id_l) gLAT(id_l)];
-    elseif tblLog.GDL_ID{lt}=="24FF"
-        x00 = [gLON(id_ppt) gLAT(id_ppt)];
-    else
-        x00 = [(gLON(id_l)+gLON(id_ppt))/2 (gLAT(id_l)+gLAT(id_ppt))/2];
+        caxis(c_axis);
+        borders('countries','w')
+
+        tt = raw{lt}.GDL_ID + " | ";
+        % tt = tt+ num2str(sta{lt}.twlNb(iws))+"twls" + " | ";
+        tt = tt + datestr(sta{lt}.start(iws),'dd-mmm');
+        tt = tt + "-" + datestr(sta{lt}.end(iws),'dd-mmm');
+        title(tt)
+
+        h2=scatter(gLON(id_l), gLAT(id_l),200,'MarkerFaceColor','y','MarkerEdgecolor','k');
+        h3=scatter(gLON(id_ppt), gLAT(id_ppt),200,'MarkerFaceColor','b','MarkerEdgecolor','k');
+        h4=plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2);
+
+        if tblLog.GDL_ID{lt}=="20OA"
+            x00 = [gLON(id_l) gLAT(id_l)];
+        elseif tblLog.GDL_ID{lt}=="24FF"
+            x00 = [gLON(id_ppt) gLAT(id_ppt)];
+        else
+            x00 = [(gLON(id_l)+gLON(id_ppt))/2 (gLAT(id_l)+gLAT(id_ppt))/2];
+        end
+        sz_w=5;
+        axis equal; axis([x00(1)-sz_w x00(1)+sz_w x00(2)-sz_w x00(2)+sz_w]);
+
+        x0=x00-sz_w+1;
+        dx = 1./[lldistkm(x00,x00+[1 0]) lldistkm(x00,x00+[0 1])]*100;
+        h=plot([x0(1) x0(1)], [x0(2) x0(2)+dx(2)], '-r', 'LineWidth', 2);%label(h,'100km','location','middle','slope')
+        h=plot([x0(1) x0(1)+dx(1)], [x0(2) x0(2)],'-r', 'LineWidth', 2); label(h,'100km')
     end
-    sz_w=5;
-    axis equal; axis([x00(1)-sz_w x00(1)+sz_w x00(2)-sz_w x00(2)+sz_w]);
-
-    x0=x00-sz_w+1;
-    dx = 1./[lldistkm(x00,x00+[1 0]) lldistkm(x00,x00+[0 1])]*100;
-    h=plot([x0(1) x0(1)], [x0(2) x0(2)+dx(2)], '-r', 'LineWidth', 2);%label(h,'100km','location','middle','slope')
-    h=plot([x0(1) x0(1)+dx(1)], [x0(2) x0(2)],'-r', 'LineWidth', 2); label(h,'100km')
-
 end
 
 % exportgraphics(gcf,'pressure_light_winter_map.png','Resolution',300)
@@ -633,7 +634,7 @@ dpptl([5 11 12],:)=nan;
 % figure; plot(1:16,dpptl(:,1),'o')
 nanmean(dpptl(:,1))
 
-%%
+
 %%
 sta_sm=cell(1,height(tblLog));
 for lt=1:height(tblLog)

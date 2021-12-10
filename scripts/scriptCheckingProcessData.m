@@ -1,8 +1,10 @@
 %%
+addpath(genpath('../functions'))
+load("../data/processedDataTraquet.mat")
 scriptAltPres
 
 %%
-lt=1;
+lt=10;
 
 col = [42,71,94;126 71 149;38 38 38;5 102 47;108 49 14]/255;
 
@@ -46,22 +48,22 @@ end
 
 
 %%
-mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
-
-%%
 % subp_row=2*ones(1,height(tblLog));
 % subp_row([11 12])=3;
 % subp_row([15 16])=1;
-for lt=1:height(tblLog)
+for lt=10:height(tblLog)
  
-    figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
-    tiledlayout('flow','TileSpacing','tight','Padding','tight')
+    %figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
+    %tiledlayout('flow','TileSpacing','tight','Padding','tight')
+    
+    mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
+
     
     [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
     for i_s = 1:height(sta_sm{lt})
-        nexttile; hold on;
+        %nexttile; hold on;
         
-        % figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
+        figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
         
         %set(gca,'Color','k')
         tmp_p = pres_prob{lt}(:,:,sta_sm{lt}.staID(i_s));
@@ -89,11 +91,12 @@ for lt=1:height(tblLog)
         if i_s>1
             tt = tt+ " | flight: "+num2str(round(hours(sta_sm{lt}.actEffort(max(1,i_s-1))))) + " hrs"  ;
             % tt = {tt{:} num2str(sta_sm{lt}.actNb(max(1,i_s-1))) + "act";
-            if exist('path_mean','var')
-                tmpd = reshape(lldistkm([path_mean(i_s-1,2) path_mean(i_s-1,1)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
-                plot(path_mean(i_s-1,1), path_mean(i_s-1,2),'.w','linewidth',2,'MarkerSize',40)
-                plot(path_mean(i_s-1,1), path_mean(i_s-1,2),'.g','linewidth',2,'MarkerSize',30)
-                plot(path_mean(i_s,1), path_mean(i_s,2),'or','linewidth',2,'MarkerSize',12)
+            if exist('gr','var')
+                path_short = [lon{lt}(gr{lt}.sp.lon) lat{lt}(gr{lt}.sp.lat)];
+                tmpd = reshape(lldistkm([path_short(i_s-1,2) path_short(i_s-1,1)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
+                plot(path_short(i_s-1,1), path_short(i_s-1,2),'.w','linewidth',2,'MarkerSize',40)
+                plot(path_short(i_s-1,1), path_short(i_s-1,2),'.g','linewidth',2,'MarkerSize',30)
+                plot(path_short(i_s,1), path_short(i_s,2),'or','linewidth',2,'MarkerSize',12)
             else
                 tmpd = reshape(lldistkm([gLAT(id) gLON(id)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
                 plot(gLON(id), gLAT(id),'.w','linewidth',2,'MarkerSize',40)
@@ -112,7 +115,7 @@ for lt=1:height(tblLog)
 
         title(tt)
 
-        caxis(c_axis);
+        caxis(c_axis); xticklabels('');yticklabels('');
         
         plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'.w','MarkerSize',40)
         plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'.r','MarkerSize',30)
@@ -124,11 +127,11 @@ for lt=1:height(tblLog)
 %         h=plot([x0(1) x0(1)], [x0(2) x0(2)+dx(2)], '-r', 'LineWidth', 2);%label(h,'100km','location','middle','slope')
 %         h=plot([x0(1) x0(1)+dx(1)], [x0(2) x0(2)],'-r', 'LineWidth', 2); label(h,'100km')
 %         
-        % exportgraphics(gcf,['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '_' num2str(i_s) '.png'],'Resolution',300)
+        exportgraphics(gcf,['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '_' num2str(i_s) '.png'],'Resolution',300)
         %keyboard
         % close all
         
     end
-     
+     % keyboard
     % exportgraphics(gcf,['combined_map_48h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',300)
 end
