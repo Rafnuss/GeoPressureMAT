@@ -83,5 +83,5 @@ for lt=1:height(tblLog)
             alt{lt}{i_s}.altCalib = pressure2altitude(raw{lt}.pressure.obsWithOutliars(id_tgem), tmp_pres_interp)+calibGeoDEM(lt,1);
         end
     end
-    lt
+    %lt
 end

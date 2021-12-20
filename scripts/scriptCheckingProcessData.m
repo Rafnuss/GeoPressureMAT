@@ -1,6 +1,6 @@
 %%
 addpath(genpath('../functions'))
-load("../data/processedDataTraquet.mat")
+load("../data/processedData.mat")
 scriptAltPres
 
 %%
@@ -33,7 +33,7 @@ grid on; box on; axis tight;
 %%
 sta_sm=cell(1,height(tblLog));
 for lt=1:height(tblLog)
-    grp_id = hours(sta{lt}.end-sta{lt}.start)>0;%sta{lt}.twlNb>=4;
+    grp_id = hours(sta{lt}.end-sta{lt}.start)>48;%sta{lt}.twlNb>=4;
     grp_id(1) = true;
     if ~isnat(tblLog.CalibSecondStart(lt))
         grp_id(end) = true;
@@ -51,19 +51,19 @@ end
 % subp_row=2*ones(1,height(tblLog));
 % subp_row([11 12])=3;
 % subp_row([15 16])=1;
-for lt=10:height(tblLog)
+for lt=1:height(tblLog)
  
-    %figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
-    %tiledlayout('flow','TileSpacing','tight','Padding','tight')
+    figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
+    tiledlayout('flow','TileSpacing','tight','Padding','tight')
     
     mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
 
     
     [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
     for i_s = 1:height(sta_sm{lt})
-        %nexttile; hold on;
+        nexttile; hold on;
         
-        figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
+        % figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
         
         %set(gca,'Color','k')
         tmp_p = pres_prob{lt}(:,:,sta_sm{lt}.staID(i_s));
@@ -127,11 +127,11 @@ for lt=10:height(tblLog)
 %         h=plot([x0(1) x0(1)], [x0(2) x0(2)+dx(2)], '-r', 'LineWidth', 2);%label(h,'100km','location','middle','slope')
 %         h=plot([x0(1) x0(1)+dx(1)], [x0(2) x0(2)],'-r', 'LineWidth', 2); label(h,'100km')
 %         
-        exportgraphics(gcf,['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '_' num2str(i_s) '.png'],'Resolution',300)
+        % exportgraphics(gcf,['combined_map_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '_' num2str(i_s) '.png'],'Resolution',300)
         %keyboard
         % close all
         
     end
-     % keyboard
+     keyboard
     % exportgraphics(gcf,['combined_map_48h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',300)
 end
