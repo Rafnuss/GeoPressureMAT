@@ -6,3 +6,6 @@ HTML/*
 *.asv
 *.mat
 *.m~
+
+*.DS_Store
+.DS_Store
