@@ -3,7 +3,8 @@
 addpath(genpath('../functions'))
 load("../data/processedDataStudyPressure.mat")
 
-%% 
+%% Define the stationary period for the graphs
+
 sta_sm=cell(1,height(tblLog));
 for lt=1:height(tblLog)
     if strcmp(tblLog.CommonName{lt},'Eurasian Nightjar')
@@ -23,7 +24,7 @@ for lt=1:height(tblLog)
     sta_sm{lt}.staID = find(grp_id);
 end
 
-%% 
+%% Build the graph
 
 gr=cell(height(tblLog),1);
 % lt=find(tblLog.GDL_ID == "22QO"); % 22QL
@@ -47,10 +48,30 @@ for lt=1:height(tblLog)
     disp([tblLog.GDL_ID{lt} ' ' num2str(t,3) ' sec'])
 end
 
+%% Simulation path with gibbs
+nj=1000;
+
+for lt=1:height(tblLog)
+    disp(raw{lt}.GDL_ID)
+    
+    % Define initial and fixed path
+    % intial path as the shortest path
+    path0=sub2ind(gr{lt}.snds,gr{lt}.sp.lat,gr{lt}.sp.lon,1:gr{lt}.snds(3));
+    % Fixed path for first and possibly last
+    fixPath = false(size(path0));
+    if isnat(tblLog.CalibSecondStart(lt))
+        fixPath(1)=true;
+    else
+        fixPath([1 end])=true;
+    end
+    
+    gr{lt}.psim = gibbsGraph(nj,path0,fixPath,gr{lt});
+
+end
+
+%% Save
+
 save('../data/graph'+project+'.mat','gr','-v7.3')
-
-
-
 
 %% Export to geotiff
 for lt=1:height(tblLog)
