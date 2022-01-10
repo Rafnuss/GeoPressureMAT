@@ -27,10 +27,19 @@ for lt=1:height(tblLog)
     tlt2.isOutliar(:) = false;
     tlt2.series(:) = "presERA5";
     
-    tlt3= [tlt;tlt2];
-    tlt3.GDL(:) = string(raw{lt}.GDL_ID);
+    tlt3= [tlt1;tlt2];
+    % tlt3.GDL(:) = string(raw{lt}.GDL_ID);
+    tlt3.date.Format="yyyy-MM-dd HH:mm:SS";
     
-    tlt4 = [tlt4;tlt3];
+% % %     figure; hold on
+% % %     plot(tlt3.date(tlt3.series=="presERA5"),tlt3.obs(tlt3.series=="presERA5"))
+% % %     plot(tlt3.date(tlt3.series~="presERA5"),tlt3.obs(tlt3.series~="presERA5"))
+
+
+    writetable(tlt3,"../data/labels/AllTracksPressureWithReanalysis_"+string(raw{lt}.GDL_ID)+".csv")
 end
 
-writetable(tlt4,'../data/labels/AllTracksPressureWithReanalysis.csv')
+str = "";
+for lt=1:height(tblLog)
+    str= str+"<option value='"+string(raw{lt}.GDL_ID)+"'>"+string(tblLog.CommonName{lt})+" ("+string(raw{lt}.GDL_ID)+")</option>"
+end
