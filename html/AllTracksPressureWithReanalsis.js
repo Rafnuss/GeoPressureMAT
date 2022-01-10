@@ -65,7 +65,7 @@ function makeplot(gdlid) {
         y: 1,
         "orientation": "h"
       },
-      hovermode: 'none',
+      hovermode: false,
     });
 
   });
