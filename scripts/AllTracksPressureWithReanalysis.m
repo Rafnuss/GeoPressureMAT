@@ -1,4 +1,4 @@
-load('processedDataStudyPressure.mat')
+load('../data/processedDataStudyPressure.mat')
 addpath(genpath('../functions'))
 scriptAltPres()
 
@@ -10,8 +10,9 @@ for lt=1:height(tblLog)
     tlt1.obs=tlt1.obsWithOutliars;
     tlt1 = removevars(tlt1,'obsWithOutliars');
     tlt1.series(:) = "presGL";
+    tlt1.sta_id(:) = "";
     
-    tmp1=[];  tmp2=[];
+    tmp1=[];  tmp2=[]; tmp3=[];
     for i_s = 1:height(sta{lt})
         id_tgr = find(sta{lt}.start(i_s)<spttime & spttime < sta{lt}.end(i_s));
         id_tge = sta{lt}.start(i_s)<raw{lt}.pressure.date & raw{lt}.pressure.date < sta{lt}.end(i_s);
@@ -21,9 +22,10 @@ for lt=1:height(tblLog)
         
         tmp1 = [tmp1 ; sp{lt}{i_s}.time ];
         tmp2 = [tmp2; sp{lt}{i_s}.pres'-nanmean(sp{lt}{i_s}.pres)+nanmean(pres_gr)];
+        tmp3 = [tmp3; i_s*ones(size(sp{lt}{i_s}.time))];
     end
     
-    tlt2 = table(tmp1,tmp2,'VariableNames',{'date','obs'});
+    tlt2 = table(tmp1,tmp2,tmp3,'VariableNames',{'date','obs','sta_id'});
     tlt2.isOutliar(:) = false;
     tlt2.series(:) = "presERA5";
     
@@ -36,10 +38,10 @@ for lt=1:height(tblLog)
 % % %     plot(tlt3.date(tlt3.series~="presERA5"),tlt3.obs(tlt3.series~="presERA5"))
 
 
-    writetable(tlt3,"../data/labels/AllTracksPressureWithReanalysis_"+string(raw{lt}.GDL_ID)+".csv")
+    writetable(tlt3,"../data/export/label/AllTracksPressureWithReanalysis_"+string(raw{lt}.GDL_ID)+".csv")
 end
 
 str = "";
 for lt=1:height(tblLog)
-    str= str+"<option value='"+string(raw{lt}.GDL_ID)+"'>"+string(tblLog.CommonName{lt})+" ("+string(raw{lt}.GDL_ID)+")</option>"
+    str= str+"<option value='"+string(raw{lt}.GDL_ID)+"'>"+string(tblLog.CommonName{lt})+" ("+string(raw{lt}.GDL_ID)+")</option>";
 end
