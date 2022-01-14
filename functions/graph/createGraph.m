@@ -1,4 +1,4 @@
-function [gr,nds] = createGraph(prob_map,lat,lon,calib,actEffort,thr_prob_percentile)
+function [gr,nds] = createGraph(prob_map,lat,lon,calib,actEffort,thr_prob_percentile,thr_gs)
 % Create the graph (vectors of sink and source index in the matrix) from a
 % proabibilty map and a threashold of ground_speed
 
@@ -7,8 +7,7 @@ function [gr,nds] = createGraph(prob_map,lat,lon,calib,actEffort,thr_prob_percen
 gr.lat = lat;
 gr.lon = lon;
 gr.snds = [numel(gr.lat), numel(gr.lon), size(prob_map,3)];
-gr.actEffort = max(1,hours(actEffort));
-
+gr.actEffort = hours(actEffort);%max(1,hours(actEffort));
 
 % Create the index matrix of all coordinate (space-time) of the grid
 % idx=reshape(1:numel(prob_map),size(prob_map));
@@ -32,12 +31,27 @@ if ~any(isnat(calib.second_period))
     prob_map(tmp1,tmp2,end)=1;
 end
 
-
+% find location above the prob threashold
 nds = prob_map>=reshape(thr_prob,1,1,[]);
-
-
-
 assert(all(sum(nds,[1 2])>0),['No possible location at stationary period: ' num2str(find(sum(nds,[1 2])==0)')])
+
+% filter nds with distance 
+resolution=0.25*111;
+for i=1:3
+    for i_s=1:size(nds,3)-1
+        nds(:,:,i_s+1) = bwdist(nds(:,:,i_s)) < gr.actEffort(i_s)*thr_gs/resolution & nds(:,:,i_s+1);
+        assert(sum(nds(:,:,i_s+1),'all')>0,'No more point avialable')
+    end
+    for i_s=size(nds,3):-1:2
+        nds(:,:,i_s-1) = bwdist(nds(:,:,i_s)) < gr.actEffort(i_s-1)*thr_gs/resolution & nds(:,:,i_s-1);
+        assert(sum(nds(:,:,i_s-1),'all')>0,'No more point avialable')
+    end
+end
+
+% figure; tiledlayout('flow','TileSpacing','tight','Padding','tight');
+% for i_s=1:size(nds,3)
+%     nexttile; imagesc(nds(:,:,i_s))
+% end
 
 % Create the source S and target T
 S=cell(gr.snds(3)-1,1);
@@ -64,7 +78,7 @@ gr.t = cell2mat(cellfun(@(x) x(:),T,'UniformOutput',false));
 % 
 % % Add the sign
 % gr.gs = sum([sign(lon(Tlon)-lon(Slon)) sign(lat(Tlat)-lat(Slat))].*tmp .* [1 1i],2);
-resolution=0.25*111;
+
 gr.gs = resolution.*((Tlon-Slon).*cos(pi/180*lat(floor((Tlat+Slat)/2)))+1i.*(Tlat-Slat))./gr.actEffort(St);
 
 

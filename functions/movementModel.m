@@ -48,12 +48,14 @@ switch method
 
         % Vt [m/s] true speed (bird speed-wind speed)
         f_eng = @(Vt) (2*k*(m*gcst)^2)./(Vt*pi*B.^2.*airdens) + airdens.*Vt.^3*Sb(m)*CDb/2 + Cpro/Ra*1.05*k^(3/4)*m^(3/2)*gcst^(3/2)*Sb(m)^(1/4)*CDb^(1/4)./airdens.^(1/2)/B^(3/2);
-
-        speed_y = (1./f_eng(speed_x)).^.5;
+        
+        f_speed = @(Vt) sqrt(1./f_eng(Vt));
+        
+        % speed_y = f_speed(speed_x);
 end
 
 % 
-speed_y(speed_y<.005&speed_x<40)=.005;
+% speed_y(speed_y<.005&speed_x<40)=.005;
 
 
 %% Create pdf
@@ -61,7 +63,9 @@ speed_y(speed_y<.005&speed_x<40)=.005;
 % mvt_pdf = @(x) interp1(speed_x,speed_y,x,'linear',eps);
 
 % fasterer version with a rounding of speed to 1 km/h
-mvt_pdf = @(x) speed_y(min(round(x)+1,numel(speed_y)));
+% mvt_pdf = @(x) speed_y(min(round(x)+1,numel(speed_y)));
+% mvt_pdf = @(x) speed_y(min(round(x)+1,numel(speed_y)));
+mvt_pdf = @(x) f_speed(x);
 
 
 %% Figure

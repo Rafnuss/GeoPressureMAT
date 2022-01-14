@@ -4,7 +4,7 @@ load("../data/processedData.mat")
 scriptAltPres
 
 %%
-lt=10;
+lt=13;
 
 col = [42,71,94;126 71 149;38 38 38;5 102 47;108 49 14]/255;
 

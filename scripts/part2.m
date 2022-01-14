@@ -71,32 +71,6 @@ end
 
 
 
-%% Gibbs Sampling
-
-figure; hold on;
-borders('countries','k')
-axis equal; axis([[15 35],[-30 15]]);
-for i_p=1:numel(p)
-    plot(glon(Py(:,i_p)), glat(Px(:,i_p)),'k')
-    scatter(glon(Py(:,i_p)), glat(Px(:,i_p)),10*log(sta.twlNb)+10,Pt(:,i_p),'filled')
-end
-
-
-figure; hold on;
-borders('countries','k')
-axis equal; axis([[15 35],[-30 15]]);
-plot(quantile(glon(Py),.5,2), quantile(glat(Px),.5,2),'k')
-for i_s=1:height(sta)
-    plot([quantile(glon(Py(i_s,:)),.05) quantile(glon(Py(i_s,:)),.95)], [quantile(glat(Px(i_s,:)),.5) quantile(glat(Px(i_s,:)),.5)],'k','linewidth',2)
-    plot([quantile(glon(Py(i_s,:)),.5) quantile(glon(Py(i_s,:)),.5)], [quantile(glat(Px(i_s,:)),.05) quantile(glat(Px(i_s,:)),.95)],'k','linewidth',2)
-end
-scatter(quantile(glon(Py),.5,2), quantile(glat(Px),.5,2),50*log(sta.twlNb)+10,Pt(:,1),'filled')
-
-
-figure;  boxplot(AS2(sim_edge(:,2:end))');
-
-
-
 
 %% Map of posteriori pdf
 grf = gr{lt};
@@ -209,6 +183,28 @@ axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
 xticklabels(''); yticklabels('')
 
 
+
+%% With/without light
+
+for lt=1:height(tblLog)
+    lt
+    grt = gr{lt};
+    prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
+    grt.p = prob_map(grt.t) .* mvt_pdf(abs(grt.as));
+    gr{lt}.sp_withoutlight = shortestPathGraph(grt);
+end
+
+figure;tiledlayout('flow','TileSpacing','none','Padding','none')
+for lt=1:height(tblLog)
+    if lt==5, continue; end
+    nexttile; hold on;
+    borders('countries','color',[.6 .6 .6]);
+    axis equal; axis([min(gr{lt}.lon) max(gr{lt}.lon) min(gr{lt}.lat) max(gr{lt}.lat) ]);
+    xticklabels(''); yticklabels('')
+    plot(gr{lt}.lon(gr{lt}.sp.lon), gr{lt}.lat(gr{lt}.sp.lat),'-o','linewidth',2)
+    plot(gr{lt}.lon(gr{lt}.sp_withoutlight.lon), gr{lt}.lat(gr{lt}.sp_withoutlight.lat),'-o','linewidth',2)
+end
+
 %% Aggregation of prob
 grf =gr{lt};
 
@@ -233,7 +229,7 @@ xticklabels(''); yticklabels('')
 
 
 %% Histogram of speed
-grf =gr{lt};
+grf = gr{lt};
 [Slat,Slon,St]=ind2sub(grf.snds,grf.s);
 [Tlat,Tlon,Tt]=ind2sub(grf.snds,grf.t);
 

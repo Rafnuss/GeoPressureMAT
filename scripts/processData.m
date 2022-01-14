@@ -195,7 +195,7 @@ spttime = datetime(double(ncread(file,'time'))/24 + datenum('1900-01-01 00:00:00
 % Allow for some error for the threahodl of pressure
 dp_margin = [3 -3];
 
-pres_rmse = cell(height(tblLog),1);
+pres_mse = cell(height(tblLog),1);
 pres_thr = cell(height(tblLog),1);
 pres_prob = cell(height(tblLog),1);
 pres_n = cell(height(tblLog),1);
@@ -216,7 +216,7 @@ for lt=1:height(tblLog)
     [~,id_lon_tmp]=min(abs(raw{lt}.calib.lon-glon(id_lon)));
     
     % Compute Pressue error map for each stationary period
-    pres_rmse{lt} = nan(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
+    pres_mse{lt} = nan(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
     pres_prob{lt} = nan(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
     pres_thr{lt} = false(numel(lat{lt}),numel(lon{lt}),height(sta{lt}));
     pres_n{lt} = nan(height(sta{lt}),1);
@@ -287,6 +287,9 @@ for lt=1:height(tblLog)
 
             % Assess the match
             et=e(:,:,:);
+            pres_mse{lt}(:,:,i_s) = mean(et.^2,3,'omitnan');
+            
+            
             if sta{lt}.status(i_s)=="equipment" || sta{lt}.status(i_s)=="retrieval"
                 s=tblLog.std_pres_calib(lt);
             else
@@ -296,13 +299,10 @@ for lt=1:height(tblLog)
                 warning('s cannot be zero. Use default 1')
                 s=1;
             end
-
-            w = log(pres_n{lt}(i_s))-1;
-            % pres_rmse{lt}(:,:,i_s) = w .* mean((et/s).^2,3,'omitnan');
-            pres_rmse{lt}(:,:,i_s) = w .* mean((et/s).^2,3,'omitnan');
-            
-            % RMSE to prob
-            pres_prob{lt}(:,:,i_s) = exp(-pres_rmse{lt}(:,:,i_s));
+            n = pres_n{lt}(i_s);
+            w = log(n)./n;
+            f_prob  = @(x) (1/(2*pi*s^2))^(n*w/2)*exp(-w*n/2/(s^2)*x);
+            pres_prob{lt}(:,:,i_s) = f_prob(pres_mse{lt}(:,:,i_s));
             
             % figure; imagesc(pres_prob{lt}(:,:,i_s))
        
@@ -327,5 +327,4 @@ toc
 
 %% 
 clear splt T2 err prese_rmse dh e x x_r sp* pres_ge id* pres_rmse pres_gr* y tmp file* i* s w dt et ans
-% clear gE % need to remove it to save
 save('../data/processedData'+ project +'.mat')

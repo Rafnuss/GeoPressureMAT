@@ -30,28 +30,38 @@ gr=cell(height(tblLog),1);
 % lt=find(tblLog.GDL_ID == "22QO"); % 22QL
 
 thr_prob_percentile = .99;
-
+thr_gs = 100;
 
 for lt=1:height(tblLog)
-    prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
-    tic
-    [grt,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile);
-    grt = filterGraph(grt,'gs',100);
-    grt = windSpeedGraph(grt,raw{lt},sta{lt},sta{lt},activityMig{lt});
-    grt = filterGraph(grt,'as',70);
-    mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
-    grt.p = grt.ps .* mvt_pdf(abs(grt.as));
-    grt.M = probMapGraph(grt);
-    grt.sp = shortestPathGraph(grt);
-    gr{lt} = grt;
-    t=toc;
-    disp([tblLog.GDL_ID{lt} ' ' num2str(t,3) ' sec'])
+    try
+        tic
+        disp(['Sarting: ' tblLog.GDL_ID{lt} ' ' num2str(lt)])
+        prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
+        % prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
+        [grt,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile,thr_gs);
+        t=toc; disp(['Creating graph in ' num2str(t,3) ' sec'])
+        grt = filterGraph(grt,'gs',thr_gs);
+        t=toc; disp(['Filter groundspeed ' num2str(t,3) ' sec'])
+        grt = windSpeedGraph(grt,raw{lt},sta{lt},sta{lt},activityMig{lt});
+        t=toc; disp(['Adding windspeed ' num2str(t,3) ' sec'])
+        grt = filterGraph(grt,'as',100);
+        t=toc; disp(['Filter airspeed ' num2str(t,3) ' sec'])
+        mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
+        grt.p = grt.ps .* mvt_pdf(abs(grt.as));
+        grt.M = probMapGraph(grt);
+        grt.sp = shortestPathGraph(grt);
+        gr{lt} = grt;
+        t=toc; disp(['Finished in ' num2str(t,3) ' sec'])
+        disp('----')
+    catch ME
+        disp(['Erro with ' tblLog.GDL_ID{lt} ' ' ME.message])
+    end
 end
 
 %% Simulation path with gibbs
 nj=1000;
 
-for lt=1:height(tblLog)
+for lt=6:height(tblLog)
     disp(raw{lt}.GDL_ID)
     
     % Define initial and fixed path
@@ -64,13 +74,12 @@ for lt=1:height(tblLog)
     else
         fixPath([1 end])=true;
     end
-    
+    tic
     gr{lt}.psim = gibbsGraph(nj,path0,fixPath,gr{lt});
-
+toc
 end
 
 %% Save
-
 save('../data/graph'+project+'.mat','gr','-v7.3')
 
 %% Export to geotiff

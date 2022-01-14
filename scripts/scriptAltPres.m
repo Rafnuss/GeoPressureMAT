@@ -71,6 +71,7 @@ for lt=1:height(tblLog)
 
         % convert pressure to altitude based on the raw data
         alt{lt}{i_s}.alt = pressure2altitude(raw{lt}.pressure.obsWithOutliars(id_tgem), tmp_pres_interp)+alt{lt}{i_s}.dem;
+        alt{lt}{i_s}.alt_basic = pressure2altitude(raw{lt}.pressure.obsWithOutliars(id_tgem));
         
         % Known location
         if sta{lt}.status(i_s)=="equipment" || sta{lt}.status(i_s)=="retrieval"
