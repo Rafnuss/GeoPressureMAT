@@ -58,11 +58,49 @@ for i_sm = 1:height(sta_sm)-1
         for i_m = 1:numel(id_activityMig)
 
             q_time = linspace(datenum(activityMig.date_min(id_activityMig(i_m))), datenum(activityMig.date_max(id_activityMig(i_m))),2+hours(activityMig.duration(id_activityMig(i_m))));
-            ratio_hr=linspace(0,1,numel(q_time));
-            q_lat = lat_act(:,i_m) + ratio_hr .* (lat_act(:,i_m+1)-lat_act(:,i_m));
-            q_lon = lon_act(:,i_m) + ratio_hr .* (lon_act(:,i_m+1)-lon_act(:,i_m));
             q_pres = interp1(datenum(raw.pressure.date),raw.pressure.obsWithOutliars,q_time);
             
+            % First approx of linear spatial spacing (constant groundspeed)
+            ratio_hr=linspace(0,1,numel(q_time));
+            lat_diff = (lat_act(:,i_m+1)-lat_act(:,i_m));
+            lon_diff = (lon_act(:,i_m+1)-lon_act(:,i_m));
+            % orientation = atan(lat_diff./lon_diff);
+            q_lat = lat_act(:,i_m) + ratio_hr .* lat_diff;
+            q_lon = lon_act(:,i_m) + ratio_hr .* lon_diff;
+            Uact_appox = Fu(q_lon, q_lat, repmat(q_pres,numel(st_id),1), repmat(q_time,numel(st_id),1));
+            Vact_appox = Fv(q_lon, q_lat, repmat(q_pres,numel(st_id),1), repmat(q_time,numel(st_id),1));
+            
+            % Correct the spacing for constant airspeed 
+            % first, compute the average airspeed for each eadge
+            aslon = real(gr.gs(st_id)) - mean(Uact_appox,2);
+            % now using this average (and assumed constant airspeed, we can
+            % compute the ratio of the position of the bird along its 
+            % trajectory assuming this airspeed and the winspeed discretize 
+            w = movmean(Uact_appox,[0 1],2,'endpoints','discard')+aslon; 
+            % we can then estimate the ratio of distance covered by
+            % normalizing w to 1 and computing the cumulative. 
+            ratio_hr_corr_lon = [zeros(height(w),1) cumsum(w./sum(w,2),2)];
+            % one issue appears when lon_diff is zero. the ratio fof
+            % distance is getting to infinitity. In this case the ratio
+            % don't really matter, it will give the same lat lon
+            ratio_hr_corr_lon(lon_diff==0,:)=1;
+            % for diff_lon close to zero, we get the same effect, we can
+            % simply block them to 0 - 1.
+            ratio_hr_corr_lon(ratio_hr_corr_lon<0)=0;
+            ratio_hr_corr_lon(ratio_hr_corr_lon>1)=1;
+            % Another issue appear if gs=1. Then sum(w) is zero. We fix it
+            % by forcing all ratio to 1. 
+            ratio_hr_corr_lon(isnan(ratio_hr_corr_lon))=1;
+            % do the same for lat
+            aslat = imag(gr.gs(st_id)) - mean(Vact_appox,2);
+            w = movmean(Vact_appox,[0 1],2,'endpoints','discard')+aslat; 
+            ratio_hr_corr_lat = [zeros(height(w),1) cumsum(w./sum(w,2),2)];
+            ratio_hr_corr_lat(ratio_hr_corr_lat<0)=0;
+            ratio_hr_corr_lat(ratio_hr_corr_lat>1)=1;
+            ratio_hr_corr_lat(isnan(ratio_hr_corr_lat))=1;
+
+            q_lat = lat_act(:,i_m) + ratio_hr_corr_lat .* (lat_act(:,i_m+1)-lat_act(:,i_m));
+            q_lon = lon_act(:,i_m) + ratio_hr_corr_lon .* (lon_act(:,i_m+1)-lon_act(:,i_m));
             Uact(:,i_m) = mean(Fu(q_lon, q_lat, repmat(q_pres,numel(st_id),1), repmat(q_time,numel(st_id),1)),2);
             Vact(:,i_m) = mean(Fv(q_lon, q_lat, repmat(q_pres,numel(st_id),1), repmat(q_time,numel(st_id),1)),2);
 

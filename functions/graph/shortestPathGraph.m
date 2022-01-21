@@ -1,12 +1,23 @@
 function sp = shortestPathGraph(gr)
 
-G = digraph(string(gr.s),string(gr.t),-log(gr.p));
-[p_s,~,edgepath] = shortestpath(G,string(gr.s(1)),string(gr.t(end)));
-[sp.lat,sp.lon,~]=ind2sub(gr.snds,double(p_s));
+% Build the grpah
+G = digraph(gr.s,gr.t,-log(gr.p));
+
+% search shortest path
+[sp.path,~,edgepath] = shortestpath(G,gr.s(1),gr.t(end));
+
+% get lat and lon of shortest path
+[sp.lon, sp.lat, ~] = path2lonlat(sp.path,gr);
+
+% as well as edge information
 sp.gs = gr.gs(edgepath);
 sp.as = gr.as(edgepath);
+sp.ws = gr.ws(edgepath);
+sp.edge = edgepath;
 
-%figure; hold on; borders('countries','k');
-%plot(gr.lon(sp.lon), gr.lat(sp.lat),'-o')
+if false
+    figure; hold on; borders('countries','k');
+    plot(sp.lon, sp.lat,'-o')
+end
 
 end

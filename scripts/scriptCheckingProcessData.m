@@ -4,7 +4,7 @@ load("../data/processedData.mat")
 scriptAltPres
 
 %%
-lt=13;
+lt=1;
 
 col = [42,71,94;126 71 149;38 38 38;5 102 47;108 49 14]/255;
 
@@ -33,7 +33,7 @@ grid on; box on; axis tight;
 %%
 sta_sm=cell(1,height(tblLog));
 for lt=1:height(tblLog)
-    grp_id = hours(sta{lt}.end-sta{lt}.start)>48;%sta{lt}.twlNb>=4;
+    grp_id = hours(sta{lt}.end-sta{lt}.start)>0;%sta{lt}.twlNb>=4;
     grp_id(1) = true;
     if ~isnat(tblLog.CalibSecondStart(lt))
         grp_id(end) = true;
@@ -51,16 +51,16 @@ end
 % subp_row=2*ones(1,height(tblLog));
 % subp_row([11 12])=3;
 % subp_row([15 16])=1;
-for lt=1:height(tblLog)
+% for lt=1:height(tblLog)
  
     figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
     tiledlayout('flow','TileSpacing','tight','Padding','tight')
     
-    mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
+    mvt_pdf = movementModel('energy',tblLog.CommonName{1});
 
     
     [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
-    for i_s = 1:height(sta_sm{lt})
+    for i_s = 22:27%1:height(sta_sm{lt})
         nexttile; hold on;
         
         % figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])
@@ -92,11 +92,10 @@ for lt=1:height(tblLog)
             tt = tt+ " | flight: "+num2str(round(hours(sta_sm{lt}.actEffort(max(1,i_s-1))))) + " hrs"  ;
             % tt = {tt{:} num2str(sta_sm{lt}.actNb(max(1,i_s-1))) + "act";
             if exist('gr','var')
-                path_short = [lon{lt}(gr{lt}.sp.lon) lat{lt}(gr{lt}.sp.lat)];
-                tmpd = reshape(lldistkm([path_short(i_s-1,2) path_short(i_s-1,1)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
-                plot(path_short(i_s-1,1), path_short(i_s-1,2),'.w','linewidth',2,'MarkerSize',40)
-                plot(path_short(i_s-1,1), path_short(i_s-1,2),'.g','linewidth',2,'MarkerSize',30)
-                plot(path_short(i_s,1), path_short(i_s,2),'or','linewidth',2,'MarkerSize',12)
+                tmpd = reshape(lldistkm([gr{lt}.sp.lat(i_s-1) gr{lt}.sp.lon(i_s-1)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
+                plot(gr{lt}.sp.lon(i_s-1), gr{lt}.sp.lat(i_s-1),'.w','linewidth',2,'MarkerSize',40)
+                plot(gr{lt}.sp.lon(i_s-1), gr{lt}.sp.lat(i_s-1),'.g','linewidth',2,'MarkerSize',30)
+                plot(gr{lt}.sp.lon(i_s), gr{lt}.sp.lat(i_s),'or','linewidth',2,'MarkerSize',12)
             else
                 tmpd = reshape(lldistkm([gLAT(id) gLON(id)],[gLAT(:) gLON(:)]),size(gLAT))./hours(sta_sm{lt}.actEffort(i_s-1));
                 plot(gLON(id), gLAT(id),'.w','linewidth',2,'MarkerSize',40)
@@ -132,6 +131,6 @@ for lt=1:height(tblLog)
         % close all
         
     end
-     keyboard
+     %keyboard
     % exportgraphics(gcf,['combined_map_48h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',300)
-end
+% end

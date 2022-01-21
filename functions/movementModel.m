@@ -1,76 +1,41 @@
 function mvt_pdf = movementModel(method, varargin)
 
-% compit 
-speed_x = (0:1000)';
-
 switch method
     case "gam"
         if nargin>2
-            speed_y = gampdf(speed_x,varargin{1},varargin{2});
+            mvt_pdf =  @(x) gampdf(x,varargin{1},varargin{2});
         else
-            speed_y = gampdf(speed_x,7,7);
+            mvt_pdf =  @(x) gampdf(x,7,7);
         end
         
     case "norm"
-        speed_y = normpdf(speed_x,30, 10);
+        mvt_pdf = @(x) normpdf(c,30, 10);
 
     case "energy"
-        if nargin<3
-            %         name                              mass       wing
-            %         ____________________________    _______    _______ 
-            %         'Willow Warbler'                 0.009      0.195  
-            %         'Tree Pipit'                    0.0225       0.26  
-            %         'Common Chiffchaff'             0.0075       0.18  
-            %         'Spotted Flycatcher'             0.016       0.24  
-            %         'Garden Warbler'                0.0195       0.22  
-            %         'Common Whitethroat'             0.015       0.21  
-            %         'European Pied Flycatcher'       0.012       0.23  
-            %         'Common Redstart'                0.016      0.225  
-            %         'Wood Warbler'                  0.0095       0.22  
-            %         'Eurasian Blackcap'              0.017       0.23  
-            %         'Song Thrush'                    0.083       0.34 
-                
-             m = .083; %[kg] mass of bird.
-             B = .34; %[m] Wing span.
-        else
-            m = varargin{1}/1000; %[kg] mass of bird.
-            B = varargin{2}/100; %[m] Wing span.
+        bird = Bird(varargin{1});
+        Pmech = mechanicalPower(bird);
+        
+        mvt_pdf_ms = matlabFunction((1./Pmech)^3/vpaintegral(1./Pmech,0,1000));
+        mvt_pdf = @(x) mvt_pdf_ms(max(x,5)*1000/60/60);
+    case "step"
+        step = 50; rate=5;
+        if nargin>2
+            step = varargin{1};
         end
-
-        % Parameter for energy speding
-        k=1.2; % [-] Induced power factor (p. 45).
-        gcst = 9.81; % [ms-2] gravity constant
-        airdens = 1; % Air density 
-        Sb = @(m) 0.00813*m^0.666; % [m2] body frontal area
-        CDb = 0.1; % [-] body drag coefficient (p. 51).
-        Cpro = 8.4;
-        Ra = 7;
-
-        % Vt [m/s] true speed (bird speed-wind speed)
-        f_eng = @(Vt) (2*k*(m*gcst)^2)./(Vt*pi*B.^2.*airdens) + airdens.*Vt.^3*Sb(m)*CDb/2 + Cpro/Ra*1.05*k^(3/4)*m^(3/2)*gcst^(3/2)*Sb(m)^(1/4)*CDb^(1/4)./airdens.^(1/2)/B^(3/2);
-        
-        f_speed = @(Vt) sqrt(1./f_eng(Vt));
-        
-        % speed_y = f_speed(speed_x);
+        if nargin>3
+            rate = varargin{2};
+        end
+        mvt_pdf = @(x) min(exp(-(x-step)/rate),1);
 end
 
-% 
-% speed_y(speed_y<.005&speed_x<40)=.005;
 
-
-%% Create pdf
-% slow version
-% mvt_pdf = @(x) interp1(speed_x,speed_y,x,'linear',eps);
-
-% fasterer version with a rounding of speed to 1 km/h
-% mvt_pdf = @(x) speed_y(min(round(x)+1,numel(speed_y)));
-% mvt_pdf = @(x) speed_y(min(round(x)+1,numel(speed_y)));
-mvt_pdf = @(x) f_speed(x);
-
-
-%% Figure
-% figure; plot(speed_x*1000/60/60, speed_y./sum(speed_y)); xlim([0 50]); hold on; 
-% plot(speed_x*1000/60/60, speed_y./sum(speed_y)); hold on; 
+% figure; 
+if false
+    speed_x=1:1000;
+    figure;
+    plot(speed_x, log(mvt_pdf(speed_x))); xlim([0 100]);
+    %figure; plot(speed_x*1000/60/60, (mvt_pdf(speed_x))); xlim([0 100]);
+end
 
 
 

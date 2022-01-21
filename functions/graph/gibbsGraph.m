@@ -19,7 +19,7 @@ for i_p=2:nj
         % Edges and Nodes going OUT from the PREVIOUS nodes sampled (current path)
         [eidOut,nidOut] = outedges(G,path(i_s-1,i_p));
 
-        if i_s>size(path,1)
+        if i_s<size(path,1)
             % Edge and Nodes going IN the NEXT nodes from the previous path
             [eidIn,nidIn] = inedges(G,path(i_s+1,i_p-1));
             % Find nodes that are presents in both (going out from previous and coming in in the next)
@@ -44,6 +44,15 @@ for i_p=2:nj
     end
 end
 
-[psim.lat,psim.lon,~]=ind2sub(gr.snds,path);
+% Add path to the structure to return
+psim.path = path;
 
+% Lat and lon
+[psim.lon, psim.lat, ~] = path2lonlat(psim.path,gr);
+
+% Add windspeed to simulated path
+path_edge = reshape(findedge(G,path(1:end-1,:),path(2:end,:)),gr.snds(3)-1,nj);
+psim.ws = gr.ws(path_edge);
+psim.gs = gr.gs(path_edge);
+psim.as = gr.as(path_edge);
 end
