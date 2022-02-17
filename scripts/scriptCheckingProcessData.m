@@ -4,7 +4,8 @@ load("../data/processedData.mat")
 scriptAltPres
 
 %%
-lt=1;
+lt = find(tblLog.GDL_ID=="20IK");
+%lt=5;
 
 col = [42,71,94;126 71 149;38 38 38;5 102 47;108 49 14]/255;
 
@@ -29,6 +30,9 @@ for i_s = 1:height(sta{lt})
 end
 ylabel({raw{lt}.GDL_ID ,'Pressure(hPa)'})
 grid on; box on; axis tight;
+
+%%
+sta{lt}(minutes(sta{lt}.actDuration)<30,:)
 
 %%
 sta_sm=cell(1,height(tblLog));

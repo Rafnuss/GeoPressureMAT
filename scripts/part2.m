@@ -3,7 +3,7 @@ addpath(genpath('../functions'))
 project= "StudyPressure";
 load("../data/processedData"+project+".mat")
 load('../data/graph'+project+'.mat')
-
+addpath(genpath("/Users/raphael/Documents/GitHub/Flight-Matlab/"))
 
 %% Figure illustration graph
 
@@ -99,7 +99,7 @@ for lt=1:height(tblLog)
     c.TickLabels=datestr(unique(dateshift(t(1):t(end),'start','month')),'mmm');
        
     
-    gif(['graph_probMap_sp_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.gif'],'overwrite',true,'DelayTime',(5+height(sta{lt})/10)/height(sta{lt}),'frame',gca)
+    % gif(['graph_probMap_sp_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.gif'],'overwrite',true,'DelayTime',(5+height(sta{lt})/10)/height(sta{lt}),'frame',gca)
     
     
     % plot(lon{lt}(gr{lt}.psim.lon(:,1:100:end)), lat{lt}(gr{lt}.psim.lat(:,1:100:end)),'color',[.7 .7 .7]);
@@ -110,7 +110,7 @@ for lt=1:height(tblLog)
 
     for i_s = 1:height(sta{lt})
         f=gr{lt}.M(:,:,i_s);
-        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./max(f(:)));
+        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./9.4297e-39);%./max(f(:)));
         
        
         p=plot(gr{lt}.sp.lon(1:i_s),gr{lt}.sp.lat(1:i_s),'w','linewidth',3);
@@ -122,7 +122,7 @@ for lt=1:height(tblLog)
         end
         % keyboard
         
-        gif
+        %gif
         % tiadd = datenum([sta{lt}.start(i_s) sta{lt}.end(i_s)]-t(1))/datenum(t(end)-t(1));
         %pause(1)
         if i_s<height(sta{lt})
@@ -203,67 +203,67 @@ end
 %% Histogram of speed
 for lt=1:height(tblLog)
     if isempty(gr{lt}), continue; end
-ss = find(hours(sta{lt}.actEffort)>0);
-
-x_axis = (0:.1:100)';
-gs = nan(numel(x_axis), numel(ss));
-as = gs; ws=gs;
-for i_ss= 1:numel(ss)
-    i_s=ss(i_ss);
-    gs(:,i_s) = ksdensity(abs(gr{lt}.psim.gs(i_s,:)),x_axis);
-    ws(:,i_s) = ksdensity(abs(gr{lt}.psim.ws(i_s,:)),x_axis);
-    as(:,i_s) = ksdensity(abs(gr{lt}.psim.as(i_s,:)),x_axis);
-end
-
-GS = [gs; -flipud(gs)];
-AS = [as; -flipud(as)];
-WS = [ws; -flipud(ws)];
-X_axis = [x_axis;flipud(x_axis)];
-scale_width=15;
-
-colordergrad=crameri('batlow',height(sta{lt}));
-
-figure('position',[0 0 1600 900], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}]);
-tiledlayout(4,1,'TileSpacing','tight','Padding','tight')
-i_sl = (1:numel(ss))';
-nexttile; hold on
-for i_ss= 1:numel(ss)
-    i_s=ss(i_ss);
-    fill(i_ss+GS(:,i_s)*15,X_axis,colordergrad(i_s,:),'FaceAlpha',0.5)
-end
-plot([i_sl i_sl]', [quantile(abs(gr{lt}.psim.gs(ss,:)),.25,2) quantile(abs(gr{lt}.psim.gs(ss,:)),.75,2)]', '-w','linewidth',2)
-plot(i_sl, mean(abs(gr{lt}.psim.gs(ss,:)),2), '.w', 'MarkerSize',30)
-plot(i_sl, abs(gr{lt}.sp.gs(ss,:)), '.r', 'MarkerSize',20)
-ylabel('Groundspeed'); xlim([0 numel(ss)+1]); xticks([])
-nexttile; hold on
-for i_ss= 1:numel(ss)
-    i_s=ss(i_ss);
-    fill(i_ss+WS(:,i_s)*3,X_axis,colordergrad(i_s,:),'FaceAlpha',0.5)
-end
-plot([i_sl i_sl]', [quantile(abs(gr{lt}.psim.ws(ss,:)),.25,2) quantile(abs(gr{lt}.psim.ws(ss,:)),.75,2)]', '-w','linewidth',2)
-plot(i_sl, mean(abs(gr{lt}.psim.ws(ss,:)),2), '.w', 'MarkerSize',30)
-plot(i_sl, abs(gr{lt}.sp.ws(ss,:)), '.r', 'MarkerSize',20)
-ylabel('Windspeed'); xlim([0 numel(ss)+1]); xticks([])
-nexttile; hold on
-for i_ss= 1:numel(ss)
-    i_s=ss(i_ss);
-    fill(i_ss+AS(:,i_s)*scale_width,X_axis,colordergrad(i_s,:),'FaceAlpha',0.5)
-end
-plot([i_sl i_sl]', [quantile(abs(gr{lt}.psim.as(ss,:)),.25,2) quantile(abs(gr{lt}.psim.as(ss,:)),.75,2)]', '-w','linewidth',2)
-plot(i_sl, mean(abs(gr{lt}.psim.as(ss,:)),2), '.w', 'MarkerSize',30)
-plot(i_sl, abs(gr{lt}.sp.as(ss,:)), '.r', 'MarkerSize',20)
-ylabel('Airspeed'); xlim([0 numel(ss)+1]); xticks([])
-nexttile; hold on
-for i_ss= 1:numel(ss)
-    i_s=ss(i_ss);
-    bar(i_ss,hours(sta{lt}.actEffort(i_s)),'facecolor',colordergrad(i_s,:),'FaceAlpha',0.5)
-    plot(i_ss,hours(sta{lt}.actDuration(i_s)),'.k')
-end
-ylabel('Flight duration [hr]'); xlim([0 numel(ss)+1])
-xticks(1:numel(ss)); xlabel('Sationary period')
-xticklabels(ss+" | "+datestr(sta{lt}.end(ss),'dd-mmm'));%+"->"+datestr(sta{lt}.start(ss+1),'dd-mmm'))
-% exportgraphics(gcf,['speed_hist_all_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
-close all
+    ss = find(hours(sta{lt}.actEffort)>0);
+    
+    x_axis = (0:.1:100)';
+    gs = nan(numel(x_axis), numel(ss));
+    as = gs; ws=gs;
+    for i_ss= 1:numel(ss)
+        i_s=ss(i_ss);
+        gs(:,i_s) = ksdensity(abs(gr{lt}.psim.gs(i_s,:)),x_axis);
+        ws(:,i_s) = ksdensity(abs(gr{lt}.psim.ws(i_s,:)),x_axis);
+        as(:,i_s) = ksdensity(abs(gr{lt}.psim.as(i_s,:)),x_axis);
+    end
+    
+    GS = [gs; -flipud(gs)];
+    AS = [as; -flipud(as)];
+    WS = [ws; -flipud(ws)];
+    X_axis = [x_axis;flipud(x_axis)];
+    scale_width=15;
+    
+    colordergrad=crameri('batlow',height(sta{lt}));
+    
+    figure('position',[0 0 1600 900], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}]);
+    tiledlayout(4,1,'TileSpacing','tight','Padding','tight')
+    i_sl = (1:numel(ss))';
+    nexttile; hold on
+    for i_ss= 1:numel(ss)
+        i_s=ss(i_ss);
+        fill(i_ss+GS(:,i_s)*15,X_axis,colordergrad(i_s,:),'FaceAlpha',0.5)
+    end
+    plot([i_sl i_sl]', [quantile(abs(gr{lt}.psim.gs(ss,:)),.25,2) quantile(abs(gr{lt}.psim.gs(ss,:)),.75,2)]', '-w','linewidth',2)
+    plot(i_sl, mean(abs(gr{lt}.psim.gs(ss,:)),2), '.w', 'MarkerSize',30)
+    plot(i_sl, abs(gr{lt}.sp.gs(ss,:)), '.r', 'MarkerSize',20)
+    ylabel('Groundspeed'); xlim([0 numel(ss)+1]); xticks([])
+    nexttile; hold on
+    for i_ss= 1:numel(ss)
+        i_s=ss(i_ss);
+        fill(i_ss+WS(:,i_s)*3,X_axis,colordergrad(i_s,:),'FaceAlpha',0.5)
+    end
+    plot([i_sl i_sl]', [quantile(abs(gr{lt}.psim.ws(ss,:)),.25,2) quantile(abs(gr{lt}.psim.ws(ss,:)),.75,2)]', '-w','linewidth',2)
+    plot(i_sl, mean(abs(gr{lt}.psim.ws(ss,:)),2), '.w', 'MarkerSize',30)
+    plot(i_sl, abs(gr{lt}.sp.ws(ss,:)), '.r', 'MarkerSize',20)
+    ylabel('Windspeed'); xlim([0 numel(ss)+1]); xticks([])
+    nexttile; hold on
+    for i_ss= 1:numel(ss)
+        i_s=ss(i_ss);
+        fill(i_ss+AS(:,i_s)*scale_width,X_axis,colordergrad(i_s,:),'FaceAlpha',0.5)
+    end
+    plot([i_sl i_sl]', [quantile(abs(gr{lt}.psim.as(ss,:)),.25,2) quantile(abs(gr{lt}.psim.as(ss,:)),.75,2)]', '-w','linewidth',2)
+    plot(i_sl, mean(abs(gr{lt}.psim.as(ss,:)),2), '.w', 'MarkerSize',30)
+    plot(i_sl, abs(gr{lt}.sp.as(ss,:)), '.r', 'MarkerSize',20)
+    ylabel('Airspeed'); xlim([0 numel(ss)+1]); xticks([])
+    nexttile; hold on
+    for i_ss= 1:numel(ss)
+        i_s=ss(i_ss);
+        bar(i_ss,hours(sta{lt}.actEffort(i_s)),'facecolor',colordergrad(i_s,:),'FaceAlpha',0.5)
+        plot(i_ss,hours(sta{lt}.actDuration(i_s)),'.k')
+    end
+    ylabel('Flight duration [hr]'); xlim([0 numel(ss)+1])
+    xticks(1:numel(ss)); xlabel('Sationary period')
+    xticklabels(ss+" | "+datestr(sta{lt}.end(ss),'dd-mmm'));%+"->"+datestr(sta{lt}.start(ss+1),'dd-mmm'))
+    % exportgraphics(gcf,['speed_hist_all_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
+    close all
 end
 
 %% Airspeed vs Groundspeed
@@ -293,10 +293,11 @@ axis tight;
 xlabel('Total Distance traveled [km]'); ylabel('Drift [km]'); 
 legend('Windspeed','Airspeed','Groundspeed')
 
-exportgraphics(gcf,'speed_distance_GSS.png','Resolution',600)
+% exportgraphics(gcf,'speed_distance_GSS.png','Resolution',600)
 
 
 for lt=1:height(tblLog)
+    figure
     if isempty(gr{lt}), continue; end
     
     gsd=mean(gr{lt}.psim.gs .* gr{lt}.actEffort(1:end-1),2);
@@ -321,11 +322,11 @@ for lt=1:height(tblLog)
     axis tight;
     pax.ThetaTick = 0:45:360;
     pax.ThetaTickLabel = {'E','NE','N','NW','W','SW','S','SE'};
-    exportgraphics(gcf,['speed_polar_sp_3h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
+   % exportgraphics(gcf,['speed_polar_sp_3h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
     close all;
 end
 
-% Energy with duration
+%% Energy with duration
 clear res
 
 for lt=1:height(tblLog)
@@ -350,7 +351,7 @@ xticklabels(tblLog.GDL_ID)
 yline(1,'k','LineWidth',2);
 ylabel('Ratio of Energy spend with/without wind')
 
-exportgraphics(gcf,'energy_ratio_wind.png','Resolution',600)
+%exportgraphics(gcf,'energy_ratio_wind.png','Resolution',600)
 
 
 
@@ -366,20 +367,20 @@ exportgraphics(gcf,'energy_ratio_wind.png','Resolution',600)
 
 
 
-
+%% Sensitivity Analysis
 
 %% Movement model 
 lt=1;
 grf = gr{lt};
 
-w = [4 1 1/4];
+w = [4 1 1/4 0];
 for i_w=1:numel(w)
     grf.p = grf.ps .* grf.mvt_pdf(abs(grf.as).^w(i_w));
     sp{i_w} = shortestPathGraph(grf);
+    M{i_w} = probMapGraph(grf);
 end
 
-figure; tiledlayout('flow','TileSpacing','none','Padding','none')
-nexttile; hold on;
+figure; 
 xi=0:70;
 for i_w=1:numel(w)
     f = grf.mvt_pdf(xi).^w(i_w);
@@ -387,9 +388,19 @@ for i_w=1:numel(w)
 end
 xlabel('Airspeed [km/h]'); ylabel('Probability');
 
-nexttile; hold on
+figure; hold on;
 for i_w=1:numel(w)
-    plot(grf.lon(sp{i_w}.lon), grf.lat(sp{i_w}.lat),'-o','linewidth',2)
+    plot(sp{i_w}.lon, sp{i_w}.lat,'-o','linewidth',2)
+end
+borders('countries','color',[.6 .6 .6]);
+axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
+xticklabels(''); yticklabels('')
+
+figure; hold on;
+for i_w=1:1%numel(w)
+    for i_s=1:size(M{i_w},3)
+        contour(lon{lt},lat{lt},M{i_w}(:,:,i_s))
+    end
 end
 borders('countries','color',[.6 .6 .6]);
 axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
@@ -403,9 +414,8 @@ xticklabels(''); yticklabels('')
 
 
 
-
 %% Aggregation of prob
-grf =gr{lt};
+grf = gr{lt};
 
 % weight of pressure, light and movement
 wa = [1 1 1; 2 1 1];

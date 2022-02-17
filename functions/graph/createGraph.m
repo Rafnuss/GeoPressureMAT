@@ -59,6 +59,8 @@ T=cell(grt.snds(3)-1,1);
 for i_s = 1:grt.snds(3)-1
     % Get index of the source and target according to the mask
     [S{i_s}, T{i_s}]= meshgrid(find(nds(:,:,i_s))+(i_s-1)*prod(grt.snds(1:2)), find(nds(:,:,i_s+1))+i_s*prod(grt.snds(1:2)));
+    % Compute distance and filter distance her
+    % also store as integer
 end
 
 grt.lastNodes=unique(T{end});

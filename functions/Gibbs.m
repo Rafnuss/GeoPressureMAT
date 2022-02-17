@@ -1,9 +1,13 @@
-function [path] = Gibbs(nj,path0,fixPath,prob,prob_mvt)
+function [path,prob_path] = Gibbs(nj,path0,fixPath,prob,prob_mvt)
 
-path0=path0(:);
+path0 = path0(:);
+fixPath = fixPath(:);
 
 % initialized empty path
 path = repmat(path0,1,nj);
+
+% log prob of each path
+prob_path = zeros(1,nj);
 
 % % Compute first prob for path0
 % f=nan(1,nj);
@@ -55,13 +59,10 @@ for j=2:nj
         prob_tmp_s_cum = cumsum(prob_tmp_s)./sum(prob_tmp_s(:));
         [~,id_sampled] = min(abs(prob_tmp_s_cum-rand));
         path(i_s,j) = id_0(prob_tmp_id(id_sampled));
-         
-%          figure; 
-%          subplot(1,4,1);imagesc(reshape(prob(:,i_s),105,137))
-%          subplot(1,4,2);imagesc(reshape(prob_next,105,137))
-%          subplot(1,4,3);imagesc(reshape(prob_prev,105,137))
-%          subplot(1,4,4);imagesc(reshape(prob_tmp,105,137))
-%          keyboard
+        prob_path(j) = prob_path(j)+log(prob(path(i_s,j),i_s))+log(prob_prev(path(i_s,j)));
+        if i_ss==numel(ss)
+            prob_path(j) = prob_path(j)+log(prob_next(path(i_s,j)));
+        end
     end
 end
 

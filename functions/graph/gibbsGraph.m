@@ -18,26 +18,34 @@ for i_p=2:nj
         
         % Edges and Nodes going OUT from the PREVIOUS nodes sampled (current path)
         [eidOut,nidOut] = outedges(G,path(i_s-1,i_p));
+        % idOut = find(gr.s==path(i_s-1,i_p));
 
         if i_s<size(path,1)
             % Edge and Nodes going IN the NEXT nodes from the previous path
             [eidIn,nidIn] = inedges(G,path(i_s+1,i_p-1));
+            % idIn = find(gr.t==path(i_s+1,i_p-1));
+            
             % Find nodes that are presents in both (going out from previous and coming in in the next)
             [iOut, iIn] = ismember(nidOut, nidIn);
+            % [iOut, iIn] = ismember(gr.t(idOut), gr.s(idIn));
 
             % Possible nodes
             nid = nidOut(iOut);
             eid = eidIn(iIn(iIn~=0));
+            % nid = gr.t(idOut(iOut));
+
             % Probability of the possible nodes (products of edge in and edge out
             prob = G.Edges.Weight(eidOut(iOut)) .* G.Edges.Weight(eid);
+            % prob = gr.p(idOut(iOut)) .* gr.p(idIn(iIn(iIn~=0)));
         
         else
             nid = nidOut;
             prob = G.Edges.Weight(eidOut);
+            % prob = gr.p(idOut);
         end
         
-        % Radom sample the nodes
-        ids = randsample(numel(nid),1,true,prob);
+        % Random sample the nodes
+        ids = randsample(numel(prob),1,true,prob);
         path(i_s,i_p) = nid(ids);
 
         assert(~isnan(nid(ids)))

@@ -75,7 +75,7 @@ for lt=1:height(tblLog)
     sta{lt} = table();
     sta{lt}.start = [raw{lt}.pressure.date(1);activityMig{lt}.date_max];
     sta{lt}.end = [activityMig{lt}.date_min;raw{lt}.pressure.date(end)];
-    %delete stationary period below 7 hours
+    % delete stationary period below 7 hours
     % sta{lt}(hours(sta{lt}.end-sta{lt}.start)<7,:)=[];
     for i_s=1:height(sta{lt})
         if i_s~=height(sta{lt})
@@ -96,6 +96,7 @@ for lt=1:height(tblLog)
     else
         sta{lt}.actEffort =  sta{lt}.actSum./sum(sta{lt}.actSum)*sum(sta{lt}.actDuration);
     end
+    % assert(any(hours(sta{lt}.actEffort(1:end-1))>.5))
 
 
     % label stationary period & Migration
