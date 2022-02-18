@@ -1,6 +1,17 @@
 function [map, path] = probMapMarginal(prob_map, mvt_pdf, lon, lat, thr_speed, flight_duration, shortestPath)
 
+%% NOT REALLY WORKING, concept yes, but no real check 
+
 sz = size(prob_map);
+
+% % Normalize the probability map for each night
+% prob_map = prob_map ./ sum(prob_map,[1 2]);
+% 
+% % Set threashold corresponding to all nodes corresponding to
+% % thr_prob_percentile of the probability for each stationary period
+% tmp = sort(reshape(prob_map,[],grt.snds(3)));
+% thr_prob = tmp(sub2ind(size(tmp),sum(cumsum(tmp)<=(1-thr_prob_percentile)),1:grt.snds(3)));
+
 
 mask = all(prob_map<0.0001,3);
 

@@ -6,14 +6,18 @@
 % windspeed.
 
 %%
+%startup
 addpath(genpath('../functions'))
+addpath('~/Documents/GitHub/Flight-Matlab/functions/')
+addpath('~/Documents/GitHub/Flight-Matlab/data/')
 load("../data/processedDataStudyPressure.mat")
 
+
 %%
-lt=1;
+lt=5;
 
 prob_map = pres_prob{lt} .* pres_thr{lt} .* light_prob{lt} .* ~mask_water{lt};
-mvt_pdf = movementModel('energy',tblLog.mass(lt),tblLog.wingSpan(lt));
+mvt_pdf = movementModel('energy',tblLog.CommonName{lt});
 thr_speed=150;
 flight_duration = hours(sta{lt}.actEffort);
 shortestPath = true;
