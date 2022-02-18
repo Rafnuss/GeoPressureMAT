@@ -9,7 +9,6 @@ transF = sparse(gr.s,gr.t,gr.p,n,n);
 % matrix of backward transition
 transB = sparse(gr.t,gr.s,gr.p,n,n);
 
-
 % forward map
 mapF = sparse(1,n);
 % backward map
@@ -23,8 +22,10 @@ for i_s=1:gr.snds(3)-1
     mapB = mapB*transB;
 end
 
+mapF(1,gr.s(1))=1;
+mapB(1,gr.lastNodes)=1;
 map = mapF.*mapB;
-map(1,[gr.s(1) gr.t(end)])=1;
+
 
 M = reshape(full(map),gr.snds);
 % M = M./sum(M,3);
