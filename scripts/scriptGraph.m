@@ -46,7 +46,7 @@ thr_prob_percentile = .99;
 thr_gs = 150;
 thr_as_percentile = .95;
 
-for lt=7:9%:height(tblLog)
+for lt=1:height(tblLog)
     % if any(strcmp(skip_gdl, tblLog.GDL_ID{lt})), continue; end
     tic
     disp(['Sarting: ' tblLog.GDL_ID{lt} ' ' num2str(lt)])
@@ -56,7 +56,7 @@ for lt=7:9%:height(tblLog)
     t1=toc; disp(['Creating graph in ' num2str(t1,3) ' sec'])
     grt = filterGraph(grt,'gs',thr_gs);
     t2=toc; disp(['Filter groundspeed at ' num2str(thr_gs) 'km/h in ' num2str(t2,3) ' sec'])
-    grt = windSpeedGraph(grt,raw{lt},sta_sm{lt},sta_sm{lt},activityMig{lt});
+    grt = windSpeedGraph(grt,raw{lt},sta{lt},sta_sm{lt},activityMig{lt});
     t3=toc; disp(['Adding windspeed ' num2str(t2,3) ' sec'])
     % grt.mvt_pdf = movementModel('step');
     grt.mvt_pdf = movementModel('energy',tblLog.CommonName{lt});
@@ -68,10 +68,10 @@ for lt=7:9%:height(tblLog)
 
     grt.p = grt.ps .* grt.mvt_pdf(abs(grt.as));
     tic
-    grt.M = probMapGraph(grt);
+    grt.M = probMapGraph(grt); toc
     trun{lt}.prob_map=toc;
     tic
-    grt.sp = shortestPathGraph(grt);
+    grt.sp = shortestPathGraph(grt);toc
     trun{lt}.shortestpath=toc;
     gr{lt} = grt;
     t=toc; disp(['Finished in ' num2str(t,3) ' sec'])
@@ -81,29 +81,39 @@ end
 
 
 % Simulation path with gibbs
-nj=1000;
-for lt=7:height(tblLog)
+% nj=1000;
+% for lt=7:height(tblLog)
+% 
+%     % if any(strcmp(skip_gdl, tblLog.GDL_ID{lt})), continue; end
+%     disp(raw{lt}.GDL_ID)
+%     
+%     % Define intial path as the shortest path
+%     path0=gr{lt}.sp.path;
+%     % Define the fixed node/sta for first and possibly last
+%     fixPath = false(size(path0));
+%     fixPath(1)=true;
+%     if ~isnat(tblLog.CalibSecondStart(lt))
+%         fixPath(end)=true;
+%     end
+%     tic
+%     gr{lt}.psim = gibbsGraph(nj,path0,fixPath,gr{lt});
+%     trun{lt}.run_gibbs = toc;
+% end
 
-    % if any(strcmp(skip_gdl, tblLog.GDL_ID{lt})), continue; end
-    disp(raw{lt}.GDL_ID)
-    
-    % Define intial path as the shortest path
-    path0=gr{lt}.sp.path;
-    % Define the fixed node/sta for first and possibly last
-    fixPath = false(size(path0));
-    fixPath(1)=true;
-    if ~isnat(tblLog.CalibSecondStart(lt))
-        fixPath(end)=true;
-    end
+
+% Simulation path with gibbs
+nj=1000;
+for lt=11:height(tblLog)
     tic
-    gr{lt}.psim = gibbsGraph(nj,path0,fixPath,gr{lt});
-    trun{lt}.run_gibbs = toc;
+    gr{lt}.psim = sequantialSimulationGraph(nj,gr{lt});
+    toc
+    trun{lt}.sim=toc;
 end
 
 
 %% Save
 save('../data/graph'+project+'.mat','gr','trun','sta_sm','-v7.3')
-
+load('../data/graph'+project+'.mat')
 %% Export to geotiff
 scriptAltPres()
 
