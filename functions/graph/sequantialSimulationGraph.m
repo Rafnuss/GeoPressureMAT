@@ -7,61 +7,44 @@ nll=prod(gr.snds(1:2));
 % initialize path
 path = nan(gr.snds(3),nj);
 path(1,:) = gr.s(1);
-% gr.lastNodes
-
 
 % Generating the transition matrices from one sta to the next
 [~,~,source_sta]=ind2sub(gr.snds,gr.s);
-transF = cell(max(source_sta),1);
-transB = cell(max(source_sta),1);
-for i_sta = 1:max(source_sta)
+
+mapB = cell(max(source_sta),1);
+mapB{gr.snds(3)} = sparse(1,gr.lastNodes',1,1,n);
+for i_sta=(gr.snds(3)-1):-1:1
     id = source_sta==i_sta;
-    transF{i_sta} = sparse(gr.s(id),gr.t(id),gr.p(id),n,n);
-    transB{i_sta} = sparse(gr.t(id),gr.s(id),gr.p(id),n,n);
+    mapB{i_sta} = mapB{i_sta+1} * sparse(gr.t(id),gr.s(id),gr.p(id),n,n);
 end
 
-% generate the simulation path 
-sim_path = randperm(gr.snds(3));
 
 % loop through the simulated path
-for i_sim_path=1:numel(sim_path)
-    if ~isnan(path(sim_path(i_sim_path),1))
-        continue
-    end
+for i_sta=2:gr.snds(3)
 
-    i_prev = find(~isnan(path(1:sim_path(i_sim_path),1)),1,'last');
-    i_next = find(~isnan(path(sim_path(i_sim_path):end,1)),1,'first')+sim_path(i_sim_path)-1;
+    % get index of all edges from this stationary period
+    id = source_sta==i_sta-1;
 
-    transF_tmp = sparse(1:nj,path(i_prev,:),1,nj,n) ;
-    for i_c = (i_prev):(sim_path(i_sim_path)-1)
-        transF_tmp = transF_tmp*transF{i_c};
-    end
-    if isempty(i_next)
-        transB_tmp = sparse(repmat((1:nj)',1,numel(gr.lastNodes)),repmat(gr.lastNodes',nj,1),1,nj,n);
-        i_next = gr.snds(3);
-    else
-        transB_tmp = sparse(1:nj,path(i_next,:),1,nj,n) ;
-    end
-    for i_c = (i_next-1):-1:sim_path(i_sim_path)
-        transB_tmp = transB_tmp*transB{i_c};
-    end
+    % create the local transF (only edges from previous sta to next sta
+    tranF = sparse(gr.s(id),gr.t(id),gr.p(id),n,n);
 
-    M = transF_tmp .* transB_tmp;
-    %[~,~,c]=ind2sub(gr.snds,find(M(1,:)>0))
+    %
+    mapF = sparse(1:nj,path(i_sta-1,:),1,nj,n) * tranF;
 
+    M = mapF(:,nll*(i_sta-1)+(1:nll)) .* mapB{i_sta}(:,nll*(i_sta-1)+(1:nll));
+    %[~,~,c]=ind2sub(gr.snds,gr.s(id_prev))
 
-    A=M(:,nll*(sim_path(i_sim_path)-1)+(1:nll));
-    ids=nan(nj,1);
-    for i_j=1:nj
-        ids(i_j) = randsample(size(A,2),1,true,A(i_j,:));
-    end
-%     A=M(:,nll*(sim_path(i_sim_path)-1)+(1:nll));
-%     tmp=cumsum(A,2);
-%     sum( (rand(nj,1).*tmp(:,end))> tmp,2);
+    % Sampling
+    %     ids=nan(nj,1);
+    %     for i_j=1:nj
+    %         ids(i_j) = randsample(size(M,2),1,true,M(i_j,:));
+    %     end
+    tmp = cumsum(M,2);
+    ids = sum( (rand(nj,1).*tmp(:,end))> tmp,2)+1;
 
-    % 
-    path(sim_path(i_sim_path),:) = ids + nll*(sim_path(i_sim_path)-1);
-    
+    %
+    path(i_sta,:) = ids + nll*(i_sta-1);
+
 end
 
 psim.path = path;
