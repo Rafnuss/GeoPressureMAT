@@ -206,11 +206,12 @@ for lt=1:height(tblLog)
     id_lon = find(glon>=tblLog.bndy_W(lt) & glon<=tblLog.bndy_E(lt));
     id_lat = find(glat>=tblLog.bndy_S(lt) & glat<=tblLog.bndy_N(lt));
     id_t = find(raw{lt}.pressure.date(1)<=spttime & spttime <= raw{lt}.pressure.date(end));
-    splt = permute(flip(ncread(file,'sp',[id_lon(1) numel(glat)-id_lat(end)+1 1 id_t(1)],[numel(id_lon) id_lat(end)-id_lat(1)+1 1 id_t(end)-id_t(1)+1]),2)/100,[2 1 4 3]);
-    if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
-        splt_0 = permute(flip(ncread(file,'sp',[id_lon(1) numel(glat)-id_lat(end)+1 2 id_t(1)],[numel(id_lon) id_lat(end)-id_lat(1)+1 1 id_t(end)-id_t(1)+1]),2)/100,[2 1 4 3]);
-        splt(:,:,spttime(id_t)>=datetime('1-jul-2021'))=splt_0(:,:,spttime(id_t)>=datetime('1-jul-2021'));
-    end
+    splt = permute(flip(ncread(file,'sp',[id_lon(1) numel(glat)-id_lat(end)+1 id_t(1)],[numel(id_lon) id_lat(end)-id_lat(1)+1 id_t(end)-id_t(1)+1]),2)/100,[2 1 4 3]);
+%     splt = permute(flip(ncread(file,'sp',[id_lon(1) numel(glat)-id_lat(end)+1 1 id_t(1)],[numel(id_lon) id_lat(end)-id_lat(1)+1 1 id_t(end)-id_t(1)+1]),2)/100,[2 1 4 3]);
+%     if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
+%         splt_0 = permute(flip(ncread(file,'sp',[id_lon(1) numel(glat)-id_lat(end)+1 2 id_t(1)],[numel(id_lon) id_lat(end)-id_lat(1)+1 1 id_t(end)-id_t(1)+1]),2)/100,[2 1 4 3]);
+%         splt(:,:,spttime(id_t)>=datetime('1-jul-2021'))=splt_0(:,:,spttime(id_t)>=datetime('1-jul-2021'));
+%     end
     
     % Calibration location
     [~,id_lat_tmp]=min(abs(raw{lt}.calib.lat-glat(id_lat)));

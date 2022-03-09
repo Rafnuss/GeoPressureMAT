@@ -27,18 +27,20 @@ for lt=1:height(tblLog)
         [~,id_lat_tmp]=min(abs(lat{lt}(i_y)-glat));
         [~,id_lon_tmp]=min(abs(lon{lt}(i_x)-glon));
         sp{lt}{i_s}.time = spttime(id_t);
-        sp{lt}{i_s}.pres = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 1 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
-        if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
-            splt_0 = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 2 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
-            sp{lt}{i_s}.pres(spttime(id_t)>=datetime('1-jul-2021'))=splt_0(spttime(id_t)>=datetime('1-jul-2021'));
-        end
+        sp{lt}{i_s}.pres = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 id_t(1)],[1 1 id_t(end)-id_t(1)+1])/100,1,[]);
+%         sp{lt}{i_s}.pres = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 1 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
+%         if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
+%             splt_0 = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 2 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
+%             sp{lt}{i_s}.pres(spttime(id_t)>=datetime('1-jul-2021'))=splt_0(spttime(id_t)>=datetime('1-jul-2021'));
+%         end
         % Known location
         if sta{lt}.status(i_s)=="equipment" || sta{lt}.status(i_s)=="retrieval"
-            sp{lt}{i_s}.presCalib = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 1 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
-            if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
-                splt_0 = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 2 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
-                sp{lt}{i_s}.presCalib(spttime(id_t)>=datetime('1-jul-2021'))=splt_0(spttime(id_t)>=datetime('1-jul-2021'));
-            end
+            sp{lt}{i_s}.presCalib = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 id_t(1)],[1 1 id_t(end)-id_t(1)+1])/100,1,[]);
+%             sp{lt}{i_s}.presCalib = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 1 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
+%             if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
+%                 splt_0 = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 2 id_t(1)],[1 1 1 id_t(end)-id_t(1)+1])/100,1,[]);
+%                 sp{lt}{i_s}.presCalib(spttime(id_t)>=datetime('1-jul-2021'))=splt_0(spttime(id_t)>=datetime('1-jul-2021'));
+%             end
         end
 
 
@@ -55,11 +57,12 @@ for lt=1:height(tblLog)
             id_tm = find(sta{lt}.end(i_s-1)<=spttime & spttime <= sta{lt}.start(i_s+1));
             id_tgem = sta{lt}.end(i_s-1)<raw{lt}.pressure.date & raw{lt}.pressure.date < sta{lt}.start(i_s+1);
         end
-        tmp_pres = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 1 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
-        if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
-            splt_0 = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 2 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
-            tmp_pres(spttime(id_tm)>=datetime('1-jul-2021'))=splt_0(spttime(id_tm)>=datetime('1-jul-2021'));
-        end
+        tmp_pres = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 id_tm(1)],[1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
+%         tmp_pres = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 1 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
+%         if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
+%             splt_0 = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 2 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
+%             tmp_pres(spttime(id_tm)>=datetime('1-jul-2021'))=splt_0(spttime(id_tm)>=datetime('1-jul-2021'));
+%         end
         alt{lt}{i_s}.time = raw{lt}.pressure.date(id_tgem);
         
         % downscale to geolocator resolution
@@ -75,11 +78,12 @@ for lt=1:height(tblLog)
         
         % Known location
         if sta{lt}.status(i_s)=="equipment" || sta{lt}.status(i_s)=="retrieval"
-            tmp_pres = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 1 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
-            if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
-                splt_0 = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 2 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
-                tmp_pres(spttime(id_tm)>=datetime('1-jul-2021'))=splt_0(spttime(id_tm)>=datetime('1-jul-2021'));
-            end
+            tmp_pres = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 id_tm(1)],[1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
+%             tmp_pres = reshape(ncread(file,'sp',[id_lon_calib numel(glat)-id_lat_calib+1 1 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
+%             if raw{lt}.pressure.date(end)>datetime('1-jul-2021')
+%                 splt_0 = reshape(ncread(file,'sp',[id_lon_tmp numel(glat)-id_lat_tmp+1 2 id_tm(1)],[1 1 1 id_tm(end)-id_tm(1)+1])/100,1,[]);
+%                 tmp_pres(spttime(id_tm)>=datetime('1-jul-2021'))=splt_0(spttime(id_tm)>=datetime('1-jul-2021'));
+%             end
             tmp_pres_interp=interp1(spttime(id_tm),tmp_pres',alt{lt}{i_s}.time);
             alt{lt}{i_s}.altCalib = pressure2altitude(raw{lt}.pressure.obsWithOutliars(id_tgem), tmp_pres_interp)+calibGeoDEM(lt,1);
         end
