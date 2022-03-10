@@ -76,7 +76,7 @@ for i_sm = 1:height(sta_sm)-1
             % now using this average (and assumed constant airspeed, we can
             % compute the ratio of the position of the bird along its 
             % trajectory assuming this airspeed and the winspeed discretize 
-            w = movmean(Uact_appox,[0 1],2,'endpoints','discard')+aslon; 
+            w = double(movmean(Uact_appox,[0 1],2,'endpoints','discard')+aslon); 
             % we can then estimate the ratio of distance covered by
             % normalizing w to 1 and computing the cumulative. 
             ratio_hr_corr_lon = [zeros(height(w),1) cumsum(w./sum(w,2),2)];
@@ -93,7 +93,7 @@ for i_sm = 1:height(sta_sm)-1
             ratio_hr_corr_lon(isnan(ratio_hr_corr_lon))=1;
             % do the same for lat
             aslat = imag(gr.gs(st_id)) - mean(Vact_appox,2);
-            w = movmean(Vact_appox,[0 1],2,'endpoints','discard')+aslat; 
+            w = double(movmean(Vact_appox,[0 1],2,'endpoints','discard')+aslat); 
             ratio_hr_corr_lat = [zeros(height(w),1) cumsum(w./sum(w,2),2)];
             ratio_hr_corr_lat(ratio_hr_corr_lat<0)=0;
             ratio_hr_corr_lat(ratio_hr_corr_lat>1)=1;
@@ -116,7 +116,7 @@ for i_sm = 1:height(sta_sm)-1
     % mean(sqrt(sum(WS(st_id,:).^2,2)))
 end
 
-gr.ws = sum(WS.*[1 1i],2);
+gr.ws = single(sum(WS.*[1 1i],2));
 gr.as=gr.gs-gr.ws;
 
 

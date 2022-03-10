@@ -26,9 +26,7 @@ if ~exist([filename '-labeled.csv'])>0
 
     writetable(T,[filename '.csv'])
     
-    % https://github.com/Rafnuss/trainset
-    % web('http://localhost:5000/')
-    % https://trainset.herokuapp.com/
+    % https://trainset.geocene.com/
     keyboard
 end
 

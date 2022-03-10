@@ -4,10 +4,10 @@ function M = probMapGraph(gr)
 n=prod(gr.snds(1:3));
 
 % matrix of forward transition
-transF = sparse(gr.s,gr.t,gr.p,n,n);
+transF = sparse(gr.s,gr.t,double(gr.p),n,n);
 
 % matrix of backward transition
-transB = sparse(gr.t,gr.s,gr.p,n,n);
+transB = sparse(gr.t,gr.s,double(gr.p),n,n);
 
 % forward map
 mapF = sparse(1,n);

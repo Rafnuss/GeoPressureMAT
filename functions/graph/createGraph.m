@@ -58,7 +58,7 @@ S=cell(grt.snds(3)-1,1);
 T=cell(grt.snds(3)-1,1);
 for i_s = 1:grt.snds(3)-1
     % Get index of the source and target according to the mask
-    [S{i_s}, T{i_s}]= meshgrid(find(nds(:,:,i_s))+(i_s-1)*prod(grt.snds(1:2)), find(nds(:,:,i_s+1))+i_s*prod(grt.snds(1:2)));
+    [S{i_s}, T{i_s}]= meshgrid(uint32(find(nds(:,:,i_s))+(i_s-1)*prod(grt.snds(1:2))), uint32(find(nds(:,:,i_s+1))+i_s*prod(grt.snds(1:2))));
     % Compute distance and filter distance her
     % also store as integer
 end
@@ -79,12 +79,12 @@ tmp2 = lldistkm([lat(Slat) lon(Slon)], [lat(Tlat) lon(Slon)],'pythagoran');
 tmp =[tmp1 tmp2]./grt.actEffort(St);
 
 % Add the sign
-grt.gs = sum([sign(lon(Tlon)-lon(Slon)) sign(lat(Tlat)-lat(Slat))].*tmp .* [1 1i],2);
+grt.gs = single(sum([sign(lon(Tlon)-lon(Slon)) sign(lat(Tlat)-lat(Slat))].*tmp .* [1 1i],2));
 
 % grt.gs = resolution.*((Tlon-Slon).*cos(pi/180*lat(floor((Tlat+Slat)/2)))+1i.*(Tlat-Slat))./grt.actEffort(St);
 
 
 %% Probability static 
-grt.ps = prob_map(grt.t);
+grt.ps = single(prob_map(grt.t));
 
 end

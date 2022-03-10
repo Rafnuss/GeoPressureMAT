@@ -2,7 +2,9 @@
 % Setting-up
 tic
 
-project="StudyPressure";
+% project="StudyKenya";
+% project="StudyPressure";
+project="StudyTraquet";
 
 addpath(genpath('../functions'))
 load coastlines
@@ -19,6 +21,7 @@ colorder = repmat(colorder,10,1);
 % Read metadata
 tblLog = readtable('../data/tracks/rawData.xlsx');
 tblLog = tblLog(tblLog.Usable,:);
+tblLog = tblLog(tblLog.multisensor,:);
 tblLog = tblLog(tblLog.(project),:);
 tblLog.Color(cellfun(@isempty,tblLog.Color))={'000000'};
 tblLog.Color = hex2rgb(tblLog.Color);
