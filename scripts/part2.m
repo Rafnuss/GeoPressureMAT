@@ -5,13 +5,29 @@ load("../data/processedData"+project+".mat")
 load('../data/graph'+project+'.mat')
 addpath(genpath("/Users/raphael/Documents/GitHub/Flight-Matlab/"))
 
+for lt=1:height(tblLog)
+    [gr{lt}.psim.lon, gr{lt}.psim.lat, ~] = path2lonlat(gr{lt}.psim.path,gr{lt});
+
+    G = digraph(gr{lt}.s,gr{lt}.t,gr{lt}.p);
+    path_edge = reshape(findedge(G,gr{lt}.psim.path(1:end-1,:),gr{lt}.psim.path(2:end,:)),gr{lt}.snds(3)-1,[]);
+    gr{lt}.psim.ws = gr{lt}.ws(path_edge);
+    gr{lt}.psim.gs = gr{lt}.gs(path_edge);
+    gr{lt}.psim.as = gr{lt}.as(path_edge);
+end
+
+[~,~,source_sta]=ind2sub(gr{lt}.snds,gr{lt}.s);
+
+WindRose(rad2deg(angle(gr{lt}.gs(source_sta==i_s))), abs(gr{lt}.gs(source_sta==i_s)), 'anglenorth',90,'angleeast',0);
+
+WindRose(rad2deg(angle(gr{lt}.psim.gs(i_s,:))), abs(gr{lt}.psim.gs(i_s,:)), 'anglenorth',90,'angleeast',0);
+
 %% Figure illustration graph
 
 lt=1;
 % Build the graph and save the graph status at all the steps
 thr_prob_percentile = .99;
 prob_map = pres_prob{lt}(:,:,sta{lt}.staID) .* pres_thr{lt}(:,:,sta{lt}.staID) .* light_prob{lt}(:,:,sta{lt}.staID) .* ~mask_water{lt};
-[gr1,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta{lt}.actEffort,thr_prob_percentile);
+[gr1,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta{lt}.actEffort,thr_prob_percentile,Inf);
 id = find(abs(gr1.gs)>100);
 gr2=gr1; gr2.s(id)=[]; gr2.t(id)=[]; gr2.gs(id)=[];
 gr3 = filterGraph(gr2,'gs',100);
@@ -50,26 +66,6 @@ end
 
 
 
-%% Map of transition
-% grf = gr{lt};
-% [Slat,Slon,St]=ind2sub(grf.snds,grf.s);
-% [Tlat,Tlon,Tt]=ind2sub(grf.snds,grf.t);
-% nrow=4;
-% figure('position',[0 0 1400 900]); colormap(col)
-% tiledlayout('flow','TileSpacing','none','Padding','none')
-% for i_s = 1:find(sta{lt}.status=="wintering")
-%     nexttile; hold on;
-%     st_id = find(St==i_s);
-%     borders('countries','color',[.6 .6 .6]);
-%     X = [grf.lon(Slon(st_id)) grf.lat(Slat(st_id))]; X=unique(X ,"rows");
-%     plot(X(:,1),X(:,2),'.k')
-%     X = [grf.lon(Tlon(st_id)) grf.lat(Tlat(st_id))]; X=unique(X ,"rows");
-%     plot(X(:,1),X(:,2),'.r')
-%     axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
-%     xticklabels(''); yticklabels('')
-% end
-
-
 
 %% 
 for lt=1:height(tblLog)
@@ -77,7 +73,6 @@ for lt=1:height(tblLog)
     figure('position',[0 0 900 1200], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] ); hold on
     
     set(gca,'Color',[.5 .5 .5])
-    path_mean=nan(height(sta{lt}),2);
     imagesc(lon{lt},lat{lt},ones(numel(lat{lt}),numel(lon{lt}),3).*reshape([0 0 0],1,1,3),'AlphaData',~mask_water{lt});
     
     borders('countries','w')
@@ -101,16 +96,14 @@ for lt=1:height(tblLog)
     
     % gif(['graph_probMap_sp_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.gif'],'overwrite',true,'DelayTime',(5+height(sta{lt})/10)/height(sta{lt}),'frame',gca)
     
+    idrd = randsample( size(gr{lt}.psim.lon,2) , 30 );
+    plot(gr{lt}.psim.lon(:,idrd), gr{lt}.psim.lat(:,idrd),'color',[.7 .7 .7]);
     
-    % plot(lon{lt}(gr{lt}.psim.lon(:,1:100:end)), lat{lt}(gr{lt}.psim.lat(:,1:100:end)),'color',[.7 .7 .7]);
-    % idrd = randsample( size(gr{lt}.psim.lon,2) , 30 );
-    % plot(gr{lt}.psim.lon(:,idrd), gr{lt}.psim.lat(:,idrd),'color',[.7 .7 .7]);
-    
-    % plot(mean(lon{lt}(gr{lt}.psim.lon),2), mean(lat{lt}(gr{lt}.psim.lat),2),'linewidth',10,'color',[.7 .7 .7]);
+    % plot(mean(gr{lt}.psim.lon,2), mean(gr{lt}.psim.lat,2),'linewidth',10,'color',[.7 .7 .7]);
 
     for i_s = 1:height(sta{lt})
         f=gr{lt}.M(:,:,i_s);
-        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./9.4297e-39);%./max(f(:)));
+        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./max(f(:)));%./max(f(:)));
         
        
         p=plot(gr{lt}.sp.lon(1:i_s),gr{lt}.sp.lat(1:i_s),'w','linewidth',3);
@@ -132,7 +125,7 @@ for lt=1:height(tblLog)
     
  
     % exportgraphics(gca,['graph_probMap_sp_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
-    % keyboard
+    keyboard
     close all
 end
 
@@ -176,7 +169,7 @@ for lt=1:height(tblLog)
         plot(gr{lt}.sp.lon(i_s:i_s+1),gr{lt}.sp.lat(i_s:i_s+1),'color','k','Linewidth',2)
         WindRose(rad2deg(angle(gr{lt}.psim.ws(i_s,:))), abs(gr{lt}.psim.ws(i_s,:)),'X',mean(gr{lt}.sp.lon(i_s:i_s+1)),...
             'Y',mean(gr{lt}.sp.lat(i_s:i_s+1)), 'LegendType', 0, 'labels','','TitleString','',...
-        'scalefactor',2,'nfreq',0,'vWinds', vwinds(1:end-1),'nDirections',24);
+        'scalefactor',2,'nfreq',0,'vWinds', vwinds(1:end-1),'nDirections',24, 'anglenorth',90,'angleeast',0);
         text(mean(gr{lt}.sp.lon(i_s:i_s+1)),1+mean(gr{lt}.sp.lat(i_s:i_s+1)),string(i_s),'HorizontalAlignment','center','Color','white','FontWeight','bold')
         text(mean(gr{lt}.sp.lon(i_s:i_s+1)),1+mean(gr{lt}.sp.lat(i_s:i_s+1)),string(i_s),'HorizontalAlignment','center')
      % axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
@@ -195,7 +188,8 @@ for lt=1:height(tblLog)
     axis equal; set(gca,'LooseInset',get(gca,'TightInset')); title(' '); c.Ticks=vwinds;
     axis([min(gr{lt}.sp.lon)-dll max(gr{lt}.sp.lon)+dll min(gr{lt}.sp.lat)-3*dll max(gr{lt}.sp.lat)+dll ]);
     
-    exportgraphics(gcf,['graph_windrose_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'resolution',600)
+    keyboard
+    % exportgraphics(gcf,['graph_windrose_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'resolution',600)
     close all
 end
 
@@ -203,7 +197,7 @@ end
 %% Histogram of speed
 for lt=1:height(tblLog)
     if isempty(gr{lt}), continue; end
-    ss = find(hours(sta{lt}.actEffort)>0);
+    ss = find(hours(gr{lt}.actEffort)>0);
     
     x_axis = (0:.1:100)';
     gs = nan(numel(x_axis), numel(ss));
@@ -263,6 +257,7 @@ for lt=1:height(tblLog)
     xticks(1:numel(ss)); xlabel('Sationary period')
     xticklabels(ss+" | "+datestr(sta{lt}.end(ss),'dd-mmm'));%+"->"+datestr(sta{lt}.start(ss+1),'dd-mmm'))
     % exportgraphics(gcf,['speed_hist_all_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
+    keyboard
     close all
 end
 
@@ -271,23 +266,26 @@ figure('position',[0 0 1600 900]); hold on; box on; grid on; axis equal;
 for lt=1:height(tblLog)
     if isempty(gr{lt}), continue; end
 
-    % sum(abs( (gr{lt}.psim.gs)-abs(gr{lt}.psim.as)) .* gr{lt}.actEffort(1:end-1)) % km/h *h -> km
-    gsd=sum(abs(gr{lt}.psim.gs) .* gr{lt}.actEffort(1:end-1));
-    asd=sum(abs(gr{lt}.psim.as) .* gr{lt}.actEffort(1:end-1));
-    wsd=sum(abs(gr{lt}.psim.ws) .* gr{lt}.actEffort(1:end-1));
-    
-    gam = acos((wsd.^2+gsd.^2-asd.^2)./(2.*wsd.*gsd));
-    
-    awdx = wsd.*cos(gam);
-    awdy = wsd.*sin(gam);
-    
-%     plot([zeros(1000,1) awdx' ]',[zeros(1000,1) awdy']','--','LineWidth',2,'color',tblLog.Color(lt,:)+.5*(1-tblLog.Color(lt,:)))
-%     plot([awdx' gsd']',[awdy' zeros(1000,1)]','--','LineWidth',2,'color',tblLog.Color(lt,:)+.5*(1-tblLog.Color(lt,:)))
-    plot([0 mean(awdx) ]',[0 mean(awdy)]','--','LineWidth',2,'color',tblLog.Color(lt,:))
-    plot([mean(awdx) mean(gsd) ]',[ mean(awdy) 0]','LineWidth',2,'color',tblLog.Color(lt,:))
-    plot( mean(gsd), 0,'.','MarkerSize',30,'color',tblLog.Color(lt,:))
-    
-    text(mean(awdx), mean(awdy), raw{lt}.GDL_ID,'HorizontalAlignment','center','VerticalAlignment','bottom')
+    im=0;%find(sta_sm{lt}.status=="wintering");
+    for i=0:1
+        id = ((1:height(gr{lt}.psim.gs))>=im) == i;
+        % sum(abs( (gr{lt}.psim.gs)-abs(gr{lt}.psim.as)) .* gr{lt}.actEffort(1:end-1)) % km/h *h -> km
+        gsd=sum(abs(gr{lt}.psim.gs(id,:)) .* gr{lt}.actEffort(id));
+        asd=sum(abs(gr{lt}.psim.as(id,:)) .* gr{lt}.actEffort(id));
+        wsd=sum(abs(gr{lt}.psim.ws(id,:)) .* gr{lt}.actEffort(id));
+        
+        gam = acos((wsd.^2+gsd.^2-asd.^2)./(2.*wsd.*gsd));
+        
+        awdx = wsd.*cos(gam);
+        awdy = (i*2-1)*wsd.*sin(gam);
+        
+    %     plot([zeros(1000,1) awdx' ]',[zeros(1000,1) awdy']','--','LineWidth',2,'color',tblLog.Color(lt,:)+.5*(1-tblLog.Color(lt,:)))
+    %     plot([awdx' gsd']',[awdy' zeros(1000,1)]','--','LineWidth',2,'color',tblLog.Color(lt,:)+.5*(1-tblLog.Color(lt,:)))
+        plot([0 mean(awdx) ]',[0 mean(awdy)]','--','LineWidth',2,'color',tblLog.Color(lt,:))
+        plot([mean(awdx) mean(gsd) ]',[ mean(awdy) 0]','LineWidth',2,'color',tblLog.Color(lt,:))
+        plot( mean(gsd), 0,'.','MarkerSize',30,'color',tblLog.Color(lt,:))
+    end
+    text(mean(gsd), 0-150, raw{lt}.GDL_ID,'HorizontalAlignment','center','VerticalAlignment','bottom')
 end
 axis tight;
 xlabel('Total Distance traveled [km]'); ylabel('Drift [km]'); 
@@ -310,7 +308,7 @@ for lt=1:height(tblLog)
     
     colordergrad=crameri('batlow',height(sta{lt}));
     pax = polaraxes; hold on;
-    for i_s=1:height(sta{lt})-1
+    for i_s=1:height(sta_sm{lt})-1
         if gr{lt}.actEffort(i_s)>3
             % polarplot(gr{lt}.psim.gs(i_s,:) .* gr{lt}.actEffort(i_s),'.','color',colordergrad(i_s,:),'markersize',3)
             polarplot([0 wsd(i_s)],'--','LineWidth',2,'Color',colordergrad(i_s,:)); 
@@ -325,6 +323,41 @@ for lt=1:height(tblLog)
    % exportgraphics(gcf,['speed_polar_sp_3h_' tblLog.CommonName{lt} '_' raw{lt}.GDL_ID '.png'],'Resolution',600)
     close all;
 end
+
+%% Prefered direction
+% for lt=1:height(tblLog)
+%     if isempty(gr{lt}), continue; end
+%     
+%     im=find(sta_sm{lt}.status=="wintering");
+%     for i=0:1
+%         id = ((1:height(gr{lt}.psim.as))>=im) == i;
+%         
+%         if i==0
+%             dest = mean(gr{lt}.psim.lon(im,:))-gr{lt}.psim.lon(id,:) + 1i*mean(gr{lt}.psim.lat(im,:))-gr{lt}.psim.lat(id,:);
+%         else
+%             dest = mean(gr{lt}.psim.lon(end,:))-gr{lt}.psim.lon(id,:) + 1i*mean(gr{lt}.psim.lat(end,:))-gr{lt}.psim.lat(id,:);
+%         end
+% 
+%         a1=mean((real(dest).*real(gr{lt}.psim.ws(id,:))+imag(dest).*imag(gr{lt}.psim.ws(id,:))) ./ (real(dest).^2+imag(dest).^2),2);
+%         a2=mean((real(dest).*imag(gr{lt}.psim.ws(id,:))-imag(dest).*real(gr{lt}.psim.ws(id,:))) ./ (real(dest).^2+imag(dest).^2),2);
+%         
+%         b1=mean((real(dest).*real(gr{lt}.psim.as(id,:))+imag(dest).*imag(gr{lt}.psim.as(id,:))) ./ (real(dest).^2+imag(dest).^2),2);
+%         b2=mean((real(dest).*imag(gr{lt}.psim.as(id,:))-imag(dest).*real(gr{lt}.psim.as(id,:))) ./ (real(dest).^2+imag(dest).^2),2);
+%         
+%         figure;
+%         hold on
+%         plot(((1:sum(id))'+[zeros(sum(id),1) b1 ])',[zeros(sum(id),1) b2]','-k')
+%         plot(((1:sum(id))'+[zeros(sum(id),1) a1 ])',[zeros(sum(id),1) a2]','-','color',[.7 .7 .7])
+%         scatter(1:numel(a1),zeros(1,sum(id)),gr{lt}.actEffort(id)*10,'filled')
+% 
+%     end
+%     gr{lt}.psim
+% 
+%     abs(gr{lt}.psim.as)
+%     
+% end
+
+
 
 %% Energy with duration
 clear res
@@ -373,14 +406,14 @@ ylabel('Ratio of Energy spend with/without wind')
 lt=1;
 grf = gr{lt};
 
-w = [4 1 1/4 0];
+w = [2 1 1/4];
 for i_w=1:numel(w)
     grf.p = grf.ps .* grf.mvt_pdf(abs(grf.as).^w(i_w));
     sp{i_w} = shortestPathGraph(grf);
     M{i_w} = probMapGraph(grf);
 end
 
-figure; 
+figure;  hold on;
 xi=0:70;
 for i_w=1:numel(w)
     f = grf.mvt_pdf(xi).^w(i_w);
@@ -396,15 +429,49 @@ borders('countries','color',[.6 .6 .6]);
 axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
 xticklabels(''); yticklabels('')
 
-figure; hold on;
-for i_w=1:1%numel(w)
-    for i_s=1:size(M{i_w},3)
-        contour(lon{lt},lat{lt},M{i_w}(:,:,i_s))
+
+figure('position',[0 0 900*3 1200], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] ); hold on
+tiledlayout('flow','TileSpacing','tight','Padding','tight') 
+for i_w=1:numel(w)
+    nexttile;
+    imagesc(lon{lt},lat{lt},ones(numel(lat{lt}),numel(lon{lt}),3).*reshape([0 0 0],1,1,3),'AlphaData',~mask_water{lt});
+    set(gca,'Color',[.5 .5 .5])
+    
+    borders('countries','w')%'edgecolor','w','facecolor','k')
+    plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2)
+    axis equal; 
+    % axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+    [lonext, latext]=path2lonlat(gr{lt}.s,gr{lt});
+    axis([min(lonext) max(lonext) min(latext) max(latext) ]);
+    set(gca,'ydir','normal');xticks([]);yticks([])
+    % set(gca,'LooseInset',get(gca,'TightInset'));
+    
+    colordergrad=crameri('batlow',height(sta{lt}));
+    t = sta{lt}.start + (sta{lt}.end-sta{lt}.start)/2;
+    
+    colorinterp = interp1(datenum(t),colordergrad,datenum(sta{lt}.start(1):sta{lt}.end(end)));
+    colormap(colorinterp)
+    c=colorbar('south'); c.Color='w'; c.FontSize=12;
+    c.Ticks=datenum(unique(dateshift(t(1):t(end),'start','month'))-t(1))/datenum(t(end)-t(1));
+    c.TickLabels=datestr(unique(dateshift(t(1):t(end),'start','month')),'mmm');
+       
+    
+    
+    %idrd = randsample( size(gr{lt}.psim.lon,2) , 30 );
+    %plot(gr{lt}.psim.lon(:,idrd), gr{lt}.psim.lat(:,idrd),'color',[.7 .7 .7]);
+    
+    plot(sp{i_w}.lon,sp{i_w}.lat,'w','linewidth',3);
+
+    for i_s = 1:height(sta{lt})
+        f=M{i_w}(:,:,i_s);
+        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./max(f(:)));%./max(f(:)));
+    end
+    for i_s = 1:height(sta{lt})
+        sz = 20+(hours(sta{lt}.end(i_s)-sta{lt}.start(i_s)))/100;
+        p2(i_s,1) = plot(sp{i_w}.lon(i_s), sp{i_w}.lat(i_s),'.w', 'MarkerSize',sz+15);
+        p2(i_s,2) = plot(sp{i_w}.lon(i_s), sp{i_w}.lat(i_s),'.', 'MarkerSize',sz,'color',colordergrad(i_s,:));
     end
 end
-borders('countries','color',[.6 .6 .6]);
-axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
-xticklabels(''); yticklabels('')
 
 
 
@@ -414,26 +481,63 @@ xticklabels(''); yticklabels('')
 
 
 
-%% Aggregation of prob
+%% Light
 grf = gr{lt};
 
 % weight of pressure, light and movement
-wa = [1 1 1; 2 1 1];
-wa=wa./sum(wa,2);
-clear sp
-for i_w=1:height(wa)
-    prob_map = pres_prob{lt}(:,:,sta{lt}.staID).^wa(i_w,1) .* pres_thr{lt}(:,:,sta{lt}.staID) .* light_prob{lt}(:,:,sta{lt}.staID).^wa(i_w,2) .* ~mask_water{lt};
-    grf.p = prob_map(grf.t) .* mvt_pdf(abs(grf.as)).^wa(i_w,3);
+w = [0 1 2];
+clear sp M
+for i_w=1:numel(w)
+    prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID).^w(i_w) .* ~mask_water{lt};
+    prob_map = prob_map ./ sum(prob_map,[1 2]);
+    grf.p = prob_map(grf.t) .* grf.mvt_pdf(abs(grf.as));
     sp{i_w} = shortestPathGraph(grf);
+    M{i_w} = probMapGraph(grf);
 end
  
-figure; hold on
-for i_w=1:height(wa)
-    plot(grf.lon(sp{i_w}.lon), grf.lat(sp{i_w}.lat),'-o','linewidth',2)
+figure('position',[0 0 900*3 1200], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] ); hold on
+tiledlayout('flow','TileSpacing','tight','Padding','tight') 
+for i_w=1:numel(w)
+    nexttile;
+    imagesc(lon{lt},lat{lt},ones(numel(lat{lt}),numel(lon{lt}),3).*reshape([0 0 0],1,1,3),'AlphaData',~mask_water{lt});
+    set(gca,'Color',[.5 .5 .5])
+    
+    borders('countries','w')%'edgecolor','w','facecolor','k')
+    plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2)
+    axis equal; 
+    % axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
+    [lonext, latext]=path2lonlat(gr{lt}.s,gr{lt});
+    axis([min(lonext) max(lonext) min(latext) max(latext) ]);
+    set(gca,'ydir','normal');xticks([]);yticks([])
+    % set(gca,'LooseInset',get(gca,'TightInset'));
+    
+    colordergrad=crameri('batlow',height(sta{lt}));
+    t = sta{lt}.start + (sta{lt}.end-sta{lt}.start)/2;
+    
+    colorinterp = interp1(datenum(t),colordergrad,datenum(sta{lt}.start(1):sta{lt}.end(end)));
+    colormap(colorinterp)
+    c=colorbar('south'); c.Color='w'; c.FontSize=12;
+    c.Ticks=datenum(unique(dateshift(t(1):t(end),'start','month'))-t(1))/datenum(t(end)-t(1));
+    c.TickLabels=datestr(unique(dateshift(t(1):t(end),'start','month')),'mmm');
+       
+    
+    
+    %idrd = randsample( size(gr{lt}.psim.lon,2) , 30 );
+    %plot(gr{lt}.psim.lon(:,idrd), gr{lt}.psim.lat(:,idrd),'color',[.7 .7 .7]);
+    
+    plot(sp{i_w}.lon,sp{i_w}.lat,'w','linewidth',3);
+
+    for i_s = 1:height(sta{lt})
+        f=M{i_w}(:,:,i_s);
+        imagesc(lon{lt},lat{lt},ones(size(f,1),size(f,2),3).*reshape(colordergrad(i_s,:),1,1,3),'AlphaData',f./max(f(:)));%./max(f(:)));
+    end
+    for i_s = 1:height(sta{lt})
+        sz = 20+(hours(sta{lt}.end(i_s)-sta{lt}.start(i_s)))/100;
+        p2(i_s,1) = plot(sp{i_w}.lon(i_s), sp{i_w}.lat(i_s),'.w', 'MarkerSize',sz+15);
+        p2(i_s,2) = plot(sp{i_w}.lon(i_s), sp{i_w}.lat(i_s),'.', 'MarkerSize',sz,'color',colordergrad(i_s,:));
+    end
 end
-borders('countries','color',[.6 .6 .6]);
-axis equal; axis([3 max(grf.lon) min(grf.lat) max(grf.lat) ]);
-xticklabels(''); yticklabels('')
+
 
 
 
@@ -484,7 +588,6 @@ for lt=1:height(tblLog)
     % figure('position',[0 0 900 1200], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] ); hold on
     %nexttile;
     set(gca,'Color',[.5 .5 .5])
-    path_mean=nan(height(sta{lt}),2);
     borders('countries','edgecolor','w','facecolor','k')
     plot(raw{lt}.calib.lon,raw{lt}.calib.lat,'xr','linewidth',2)
     axis equal; axis([min(lon{lt}) max(lon{lt}) min(lat{lt}) max(lat{lt}) ]);
@@ -525,4 +628,37 @@ for lt=1:height(tblLog)
     Q = gr{lt}.M_withoutlight ./ sum(gr{lt}.M_withoutlight,[1 2]);
     kldiv{lt}=squeeze(sum(P .* log(P./Q),[1 2],'omitnan'));
 end
+
+
+
+
+%% Computational time
+trunt=cell2table(cellfun(@(x) struct2table(x),trun,'UniformOutput',false));
+trunt = trunt.Var1;
+
+
+trunT = table(tblLog.CommonName,'VariableNames',"CommonName");
+trunT.GDL_ID = tblLog.GDL_ID;
+trunT.n_grid = cellfun(@(x) numel(x.lat)*numel(x.lon), gr);
+trunT.n_t = cellfun(@(x) x.snds(3), gr);
+trunT.n_edge = cellfun(@(x) numel(x.s), gr);
+trunT.step1=seconds(trunt.create_graph(:,1));
+trunT.step1.Format="mm:ss";
+trunT.step2=seconds(trunt.create_graph(:,2)-trunt.create_graph(:,1));
+trunT.step2.Format="mm:ss";
+trunT.step3a=seconds(trunt.create_graph(:,3)-trunt.create_graph(:,2));
+trunT.step3a.Format="mm:ss";
+trunT.step3b=seconds(trunt.create_graph(:,4)-trunt.create_graph(:,3));
+trunT.step3b.Format="mm:ss";
+trunT.create_graph=seconds(trunt.create_graph(:,4));
+trunT.create_graph.Format="mm:ss";
+trunT.shortestpath=seconds(trunt.shortestpath);
+trunT.shortestpath.Format="mm:ss";
+trunT.prob_map=seconds(trunt.prob_map);
+trunT.prob_map.Format="mm:ss";
+trunT.sim=seconds(trunt.sim);
+trunT.sim.Format="mm:ss";
+
+
+writetable(trunT,'runtime.xlsx')   
 
