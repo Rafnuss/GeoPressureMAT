@@ -18,12 +18,20 @@ tmp = strsplit(filepath,'/');
 filename = [filepath '/' tmp{end}];
 
 % Read settings
-s = jsondecode(fileread([filename '.settings']));
-s.StarttimeRTC = datetime(s.StarttimeRTC,'InputFormat','dd.MM.yyyy HH:mm:ss');
-s.LoggingStart = datetime(s.LoggingStart,'InputFormat','dd.MM.yyyy');
-s.StopTimeRTC = datetime(s.StopTimeRTC,'InputFormat','dd.MM.yyyy HH:mm:ss');
-s.StopTimeReference = datetime(s.StopTimeReference,'InputFormat','dd.MM.yyyy HH:mm:ss');
-s.StopTimeRTC = datetime(s.StopTimeRTC,'InputFormat','dd.MM.yyyy HH:mm:ss');
+if exist([filename '.settings'],'file')
+    s = jsondecode(fileread([filename '.settings']));
+    s.StarttimeRTC = datetime(s.StarttimeRTC,'InputFormat','dd.MM.yyyy HH:mm:ss');
+    s.LoggingStart = datetime(s.LoggingStart,'InputFormat','dd.MM.yyyy');
+    s.StopTimeRTC = datetime(s.StopTimeRTC,'InputFormat','dd.MM.yyyy HH:mm:ss');
+    s.StopTimeReference = datetime(s.StopTimeReference,'InputFormat','dd.MM.yyyy HH:mm:ss');
+    s.StopTimeRTC = datetime(s.StopTimeRTC,'InputFormat','dd.MM.yyyy HH:mm:ss');
+else
+    s =  struct();
+    tmp1=strfind(filepath,'/');
+    tmp2=strfind(filepath,'_');
+    tmp = extractBetween(filepath,tmp1(end)+1,tmp2-1);
+    s.GDL_ID = tmp{1};
+end
 
 % Reading light
 dataArray = readFile([filename '.glf'],'%17{dd.MM.yyyy HH:mm}D %f %f %f %f',s_d,e_d);
