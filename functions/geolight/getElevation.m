@@ -53,7 +53,7 @@ if plotit
     subplot(2,1,1); hold on;
     plot(twlt.Twilight(twlt.Rise&~twlt_isOutliar), out.z(twlt.Rise&~twlt_isOutliar),'.','markerSize',10)
     plot(twlt.Twilight(~twlt.Rise&~twlt_isOutliar), out.z(~twlt.Rise&~twlt_isOutliar),'.','markerSize',10)
-    plot(twlt.Twilight(twlt_isOutliar), z(twlt_isOutliar),'.','color',[.2 .2 .2],'markerSize',10)
+    plot(twlt.Twilight(twlt_isOutliar), out.z(twlt_isOutliar),'.','color',[.2 .2 .2],'markerSize',10)
     if (sum(~twlt_isOutliar)>0); yline(median(out.z(~twlt_isOutliar)),'--k'); end
     ylabel('Zenith');legend('Suout.NRise','Suout.NSet','Outliar')
     subplot(2,1,2); hold on;
