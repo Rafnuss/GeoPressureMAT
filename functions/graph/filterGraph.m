@@ -26,7 +26,7 @@ assert(numel(id)>0,'no nodes left on the graph')
 gr.s=gr.s(id);
 gr.t=gr.t(id);
 
-for varName=["ws", "as", "gs", "ps" ]
+for varName=["ws", "as", "gs"]
     if isfield(gr,varName)
         gr.(varName) = gr.(varName)(id);
     end

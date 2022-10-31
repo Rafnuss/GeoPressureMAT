@@ -64,6 +64,7 @@ for i_s = 1:grt.snds(3)-1
 end
 
 grt.lastNodes=unique(T{end});
+grt.firstNodes=unique(S{1});
 
 % Convert the cells to matrix
 grt.s = cell2mat(cellfun(@(x) x(:),S,'UniformOutput',false));
@@ -84,7 +85,7 @@ grt.gs = single(sum([sign(lon(Tlon)-lon(Slon)) sign(lat(Tlat)-lat(Slat))].*tmp .
 % grt.gs = resolution.*((Tlon-Slon).*cos(pi/180*lat(floor((Tlat+Slat)/2)))+1i.*(Tlat-Slat))./grt.actEffort(St);
 
 
-%% Probability static 
-grt.ps = single(prob_map(grt.t));
+%% Probability observation 
+grt.po = prob_map;
 
 end

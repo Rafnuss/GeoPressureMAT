@@ -64,11 +64,11 @@ end
     figure('position',[0 0 1200 750], 'Name', [raw{lt}.GDL_ID ' | ' tblLog.CommonName{lt}] );
     tiledlayout('flow','TileSpacing','tight','Padding','tight')
     
-    mvt_pdf = movementModel('energy',tblLog.CommonName{1});
-
+    % mvt_pdf = movementModel('energy',tblLog.CommonName{1});
+    mvt_pdf = movementModel('gam');
     
     [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
-    for i_s = 22:27%1:height(sta_sm{lt})
+    for i_s = 1:height(sta_sm{lt})
         nexttile; hold on;
         
         % figure('position',[0 0 1600 900]); hold on ; xticks([]); yticks([])

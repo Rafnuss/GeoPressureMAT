@@ -63,7 +63,7 @@ for lt=1:height(tblLog)
     end
     
     % interpolate position for short stationary period
-    path0(hours(sta_sm{lt}.end-sta_sm{lt}.start)<=12)=nan;
+    path0(hours(sta_sm{lt}.end-sta_sm{lt}.start)<=24)=nan;
     [path_lat,path_lon] = ind2sub(size(gLAT),path0);
     path_lat0 = max(1,min(numel(lat{lt}),round(fillmissing(path_lat,'linear'))));
     path_lon0 = max(1,min(numel(lon{lt}),round(fillmissing(path_lon,'linear'))));
@@ -90,7 +90,8 @@ for lt=1:height(tblLog)
     trun{lt}.nj = nj;
 end
 
-save('../data/gibbs'+project+'.mat','path','prob_path','trun','-v7.3')
+%save('../data/gibbs'+project+'.mat','path','prob_path','trun','-v7.3')
+load('../data/gibbs'+project+'.mat')
 
 %% Figure
 % 
@@ -125,7 +126,7 @@ save('../data/gibbs'+project+'.mat','path','prob_path','trun','-v7.3')
 
 %% Figure illustraion
 
-lt=6;
+lt=2;
 
 [gLON,gLAT] = meshgrid(lon{lt},lat{lt});
 mvt_pdf = movementModel('gam');
@@ -133,9 +134,10 @@ mvt_pdf = movementModel('gam');
 figure('position',[0 0 1200 750] );
 tiledlayout('flow','TileSpacing','tight','Padding','tight')
 
-tmp_path = path0p;%path{lt}(:,1);
+[~,id]=min(prob_path{lt});
+tmp_path = path{lt}(:,id);
 
-i_s = 18;
+i_s = 6;
 
 nexttile; hold on;
 

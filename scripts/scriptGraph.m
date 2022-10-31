@@ -38,12 +38,12 @@ trun = cell(height(tblLog),1);
 thr_prob_percentile = .99;
 thr_gs = 150;
 
-for lt=3:height(tblLog)
+for lt=1:height(tblLog)
    
     tic; disp(['Sarting: ' tblLog.GDL_ID{lt} ' ' num2str(lt)])
     prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* light_prob{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
     % prob_map = pres_prob{lt}(:,:,sta_sm{lt}.staID) .* pres_thr{lt}(:,:,sta_sm{lt}.staID) .* ~mask_water{lt};
-    [grt,nds] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile,thr_gs);
+    [grt,~] = createGraph(prob_map,lat{lt},lon{lt},raw{lt}.calib,sta_sm{lt}.actEffort,thr_prob_percentile,thr_gs);
     t1=toc; disp(['Creating graph in ' num2str(t1,3) ' sec'])
     
     grt = filterGraph(grt,'gs',thr_gs);
@@ -58,11 +58,11 @@ for lt=3:height(tblLog)
     grt.thr_as = 100;
     grt = filterGraph(grt,'as',grt.thr_as);
     t4=toc; disp(['Filter airspeed at ' num2str(grt.thr_as) 'km/h in ' num2str(t4-t3,3) ' sec'])
-    grt.p = grt.ps .* grt.mvt_pdf(abs(grt.as));
+    grt.pt = grt.mvt_pdf(abs(grt.as));
     trunt.create_graph=[t1 t2 t3 t4]; 
 
     
-    tic; grt.M = probMapGraph(grt);
+    tic; [grt.M, grt.E ] = probMapGraph(grt);
     trunt.prob_map=toc;
     disp(['Prob map in ' num2str(trunt.prob_map,3) ' sec'])
 
@@ -70,18 +70,18 @@ for lt=3:height(tblLog)
     trunt.shortestpath=toc;
     disp(['Shortest path in ' num2str(trunt.shortestpath,3) ' sec'])
 
-    % Simulation path with gibbs
+    % Simulation path
     tic
     nj=1000;
     grt.psim = sequantialSimulationGraph(nj,grt);
     trunt.sim=toc;
-    disp(['Simulation of ' num2str(nj) ' paths in ' num2str(trunt.sim,3) ' sec'])
+    disp(['Simulation of ' num2str(nj) ' paths in ' num2str(trunt.sim,3) ' sec']) 
 
     t=toc; disp(['Finished in ' num2str(t4+trunt.prob_map+trunt.shortestpath+trunt.sim,3) ' sec'])
     disp('----')
 
     sta_smt=sta_sm{lt};
-    save("../data/graph/"+raw{lt}.GDL_ID,"grt","trunt","sta_smt","thr_prob_percentile","thr_gs")
+    % save("../data/graph/"+raw{lt}.GDL_ID,"grt","trunt","sta_smt","thr_prob_percentile","thr_gs")
     gr{lt} = grt;
     trun{lt} = trunt;
 end

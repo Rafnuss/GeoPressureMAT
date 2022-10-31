@@ -1,7 +1,11 @@
 
 %% Load data
+
+project="StudyStarling";
+load("../data/processedData"+project+".mat")
+
+
 addpath(genpath('../functions'))
-load("../data/processedData.mat")
 pyenv('Version','/usr/local/opt/python@3.8/bin/python3.8')
 
 
