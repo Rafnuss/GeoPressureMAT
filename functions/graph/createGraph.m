@@ -37,15 +37,13 @@ assert(all(sum(nds,[1 2])>0),['No possible location at stationary period: ' num2
 
 % filter nds with distance 
 resolution=0.25*111;
-for i=1:3
-    for i_s=1:size(nds,3)-1
-        nds(:,:,i_s+1) = bwdist(nds(:,:,i_s)) < grt.actEffort(i_s)*thr_gs/resolution & nds(:,:,i_s+1);
-        assert(sum(nds(:,:,i_s+1),'all')>0,'No more point avialable')
-    end
-    for i_s=size(nds,3):-1:2
-        nds(:,:,i_s-1) = bwdist(nds(:,:,i_s)) < grt.actEffort(i_s-1)*thr_gs/resolution & nds(:,:,i_s-1);
-        assert(sum(nds(:,:,i_s-1),'all')>0,'No more point avialable')
-    end
+for i_s=1:size(nds,3)-1
+    nds(:,:,i_s+1) = bwdist(nds(:,:,i_s)) < grt.actEffort(i_s)*thr_gs/resolution & nds(:,:,i_s+1);
+    assert(sum(nds(:,:,i_s+1),'all')>0,'No more point avialable')
+end
+for i_s=size(nds,3):-1:2
+    nds(:,:,i_s-1) = bwdist(nds(:,:,i_s)) < grt.actEffort(i_s-1)*thr_gs/resolution & nds(:,:,i_s-1);
+    assert(sum(nds(:,:,i_s-1),'all')>0,'No more point avialable')
 end
 
 % figure; tiledlayout('flow','TileSpacing','tight','Padding','tight');
